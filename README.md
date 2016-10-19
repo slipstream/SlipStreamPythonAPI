@@ -1,2 +1,2 @@
 # SlipStreamPythonAPI
-Python wrapper of the SlipStream API
+Python wrapper of the SlipStream API.
