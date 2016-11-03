@@ -3,7 +3,7 @@
 Python wrapper of the SlipStream API
 
 ## Installation
-  $ pip install slipstream-api
+  `$ pip install slipstream-api`
 
 ## Usage
   `$ python`
