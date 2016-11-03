@@ -6,7 +6,7 @@ Python wrapper of the SlipStream API
   $ pip install slipstream-api
 
 ## Usage
-  $ python
+  `$ python`
   ```python
   from slipstream.api import Api
   help(Api)
@@ -16,10 +16,11 @@ Python wrapper of the SlipStream API
   ```
 
 ## Contribute
-  ```
-  $ git clone https://github.com/slipstream/SlipStreamPythonAPI.git
-  $ cd SlipStreamPythonAPI/
-  $ pip install --editable .
+  `$ sh`
+  ```sh
+  git clone https://github.com/slipstream/SlipStreamPythonAPI.git
+  cd SlipStreamPythonAPI/
+  pip install --editable .
   ```
 
 
