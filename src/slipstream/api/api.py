@@ -246,6 +246,11 @@ class Api(object):
             run_id = uuid.UUID(run_id_str) if run_id_str is not None else None
             yield models.VirtualMachine(id=elem.get('instanceId'),
                                         cloud=elem.get('cloud'),
+                                        ram=elem.get('ram'),
+                                        cpu=elem.get('cpu'),
+                                        disk=elem.get('disk'),
+                                        instanceType=elem.get('instanceType'),
+                                        isUsable=elem.get('isUsable'),
                                         status=elem.get('state').lower(),
                                         run_id=run_id)
 

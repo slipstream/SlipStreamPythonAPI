@@ -22,6 +22,11 @@ VirtualMachine = collections.namedtuple('VirtualMachine', [
     'cloud',
     'status',
     'run_id',
+    'ram',
+    'cpu',
+    'disk',
+    'instanceType',
+    'isUsable',
 ])
 
 Usage = collections.namedtuple('Usage', [
