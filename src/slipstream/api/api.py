@@ -236,11 +236,16 @@ class Api(object):
                              started_at=elem.get('startTime'),
                              cloud=elem.get('cloudServiceNames'))
 
-    def list_virtualmachines(self):
+    def list_virtualmachines(self, run_id=None, offset=0, limit=20):
         """
         List virtual machines
+
+        :param run_id: Retrieve only virtual machines about the specified run_id. Default to None
+        :param offset: Retrieve virtual machines starting by the offset<exp>th</exp> one. Default to 0
+        :param limit: Retrieve at most 'limit' virtual machines. Default to 20
+        :return:
         """
-        root = self._xml_get('/vms')
+        root = self._xml_get('/vms', offset=offset, limit=limit, runUuid=run_id)
         for elem in ElementTree__iter(root)('vm'):
             run_id_str = elem.get('runUuid')
             run_id = uuid.UUID(run_id_str) if run_id_str is not None else None
