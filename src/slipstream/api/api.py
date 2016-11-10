@@ -234,7 +234,23 @@ class Api(object):
                              module=_mod(elem.get('moduleResourceUri')),
                              status=elem.get('status').lower(),
                              started_at=elem.get('startTime'),
+                             last_state_change=elem.get('lastStateChangeTime'),
                              cloud=elem.get('cloudServiceNames'))
+
+    def get_deployment(self, run_id):
+        """
+        Get a deployment
+
+        :param run_id: The deployment UUID of the deployment to get
+
+        """
+        root = self._xml_get('/run/' + run_id)
+        return models.Run(id=uuid.UUID(root.get('uuid')),
+                          module=_mod(root.get('moduleResourceUri')),
+                          status=root.get('state').lower(),
+                          started_at=root.get('startTime'),
+                          last_state_change=root.get('lastStateChangeTime'),
+                          cloud=root.get('cloudServiceNames'))
 
     def list_virtualmachines(self, run_id=None, offset=0, limit=20):
         """

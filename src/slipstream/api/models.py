@@ -14,6 +14,7 @@ Run = collections.namedtuple('Run', [
     'module',
     'status',
     'started_at',
+    'last_state_change',
     'cloud',
 ])
 
