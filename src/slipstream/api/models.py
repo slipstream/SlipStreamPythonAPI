@@ -9,11 +9,12 @@ App = collections.namedtuple('App', [
     'path',
 ])
 
-Run = collections.namedtuple('Run', [
+Deployment = collections.namedtuple('Deployment', [
     'id',
     'module',
     'status',
     'started_at',
+    'last_state_change',
     'cloud',
 ])
 
@@ -21,7 +22,14 @@ VirtualMachine = collections.namedtuple('VirtualMachine', [
     'id',
     'cloud',
     'status',
-    'run_id',
+    'deployment_id',
+    'deployment_owner',
+    'ip',
+    'cpu',
+    'ram',
+    'disk',
+    'instance_type',
+    'is_usable',
 ])
 
 Usage = collections.namedtuple('Usage', [
