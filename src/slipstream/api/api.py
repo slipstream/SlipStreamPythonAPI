@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import six
 import stat
 import uuid
 import logging
@@ -137,7 +138,7 @@ class Api(object):
 
     def list_applications(self):
         """
-        List applications in the appstore
+        List apps in the appstore
         """
         root = self._xml_get('/appstore')
         for elem in ElementTree__iter(root)('item'):
@@ -146,6 +147,8 @@ class Api(object):
                              version=int(elem.get('version')),
                              path=_mod(elem.get('resourceUri'),
                                       with_version=False))
+
+    
 
     def get_element(self, path):
         """
@@ -218,7 +221,7 @@ class Api(object):
             yield app
             if app.type == 'project' and recurse:
                 logger.debug("Recursing into path: {0}".format(app_path))
-                for app in self.list_modules(app_path, recurse):
+                for app in self.list_project_content(app_path, recurse):
                     yield app
 
     def list_deployments(self, inactive=False):
@@ -230,50 +233,57 @@ class Api(object):
         """
         root = self._xml_get('/run', activeOnly=(not inactive))
         for elem in ElementTree__iter(root)('item'):
-            yield models.Run(id=uuid.UUID(elem.get('uuid')),
-                             module=_mod(elem.get('moduleResourceUri')),
-                             status=elem.get('status').lower(),
-                             started_at=elem.get('startTime'),
-                             last_state_change=elem.get('lastStateChangeTime'),
-                             cloud=elem.get('cloudServiceNames'))
+            yield models.Deployment(id=uuid.UUID(elem.get('uuid')),
+                                    module=_mod(elem.get('moduleResourceUri')),
+                                    status=elem.get('status').lower(),
+                                    started_at=elem.get('startTime'),
+                                    last_state_change=elem.get('lastStateChangeTime'),
+                                    cloud=elem.get('cloudServiceNames'))
 
-    def get_deployment(self, run_id):
+    def get_deployment(self, deployment_id):
         """
         Get a deployment
 
-        :param run_id: The deployment UUID of the deployment to get
+        :param deployment_id: The deployment UUID of the deployment to get
+        :type deployment_id: str or UUID
 
         """
-        root = self._xml_get('/run/' + run_id)
-        return models.Run(id=uuid.UUID(root.get('uuid')),
-                          module=_mod(root.get('moduleResourceUri')),
-                          status=root.get('state').lower(),
-                          started_at=root.get('startTime'),
-                          last_state_change=root.get('lastStateChangeTime'),
-                          cloud=root.get('cloudServiceNames'))
+        root = self._xml_get('/run/' + str(deployment_id))
+        return models.Deployment(id=uuid.UUID(root.get('uuid')),
+                                 module=_mod(root.get('moduleResourceUri')),
+                                 status=root.get('state').lower(),
+                                 started_at=root.get('startTime'),
+                                 last_state_change=root.get('lastStateChangeTime'),
+                                 cloud=root.get('cloudServiceNames'))
 
-    def list_virtualmachines(self, run_id=None, offset=0, limit=20):
+    def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
         """
         List virtual machines
 
-        :param run_id: Retrieve only virtual machines about the specified run_id. Default to None
+        :param deployment_id: Retrieve only virtual machines about the specified run_id. Default to None
+        :type deployment_id: str or UUID
         :param offset: Retrieve virtual machines starting by the offset<exp>th</exp> one. Default to 0
         :param limit: Retrieve at most 'limit' virtual machines. Default to 20
-        :return:
+
         """
-        root = self._xml_get('/vms', offset=offset, limit=limit, runUuid=run_id)
+        if deployment_id is not None:
+            _deployment_id = str(deployment_id)
+
+        root = self._xml_get('/vms', offset=offset, limit=limit, runUuid=_deployment_id)
         for elem in ElementTree__iter(root)('vm'):
             run_id_str = elem.get('runUuid')
             run_id = uuid.UUID(run_id_str) if run_id_str is not None else None
             yield models.VirtualMachine(id=elem.get('instanceId'),
                                         cloud=elem.get('cloud'),
-                                        ram=elem.get('ram'),
-                                        cpu=elem.get('cpu'),
-                                        disk=elem.get('disk'),
-                                        instanceType=elem.get('instanceType'),
-                                        isUsable=elem.get('isUsable'),
                                         status=elem.get('state').lower(),
-                                        run_id=run_id)
+                                        deployment_id=run_id,
+                                        deployment_owner=elem.get('runOwner'),
+                                        ip=elem.get('ip'),
+                                        cpu=elem.get('cpu'),
+                                        ram=elem.get('ram'),
+                                        disk=elem.get('disk'),
+                                        instance_type=elem.get('instanceType'),
+                                        is_usable=elem.get('isUsable'))
 
     def build_component(self, path, cloud=None):
         """
@@ -343,7 +353,7 @@ class Api(object):
         _raw_params['refqname'] = path
 
         if tags:
-            _raw_params['tags'] = tags
+            _raw_params['tags'] = tags if isinstance(tags, six.string_types) else ','.join(tags)
 
         if keep_running:
             if keep_running not in self.KEEP_RUNNING_VALUES:
