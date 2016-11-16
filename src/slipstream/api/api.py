@@ -18,6 +18,11 @@ try:
 except ImportError:
     from defusedxml import ElementTree as etree
 
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_ENDPOINT = 'https://nuv.la'
@@ -129,12 +134,122 @@ class Api(object):
         response.raise_for_status()
         return etree.fromstring(response.text)
 
+    def _xml_put(self, url, data):
+        return self.session.put('%s%s' % (self.endpoint, url),
+                                headers={'Accept': 'application/xml',
+                                         'Content-Type': 'application/xml'},
+                                data=data)
+
     def _json_get(self, url, **params):
         response = self.session.get('%s%s' % (self.endpoint, url),
                                     headers={'Accept': 'application/json'},
                                     params=params)
         response.raise_for_status()
         return response.json()
+
+
+    @staticmethod
+    def _add_to_dict_if_not_none(d, key, value):
+        if key is not None and value is not None:
+            d[key] = value
+
+
+    @staticmethod
+    def _dict_values_to_string(d):
+        return {k: v if isinstance(v, six.string_types) else str(v) for k,v in six.iteritems(d)}
+
+
+    def create_user(self, username, password, email, first_name, last_name,
+                    organization=None, roles='', privileged=False,
+                    default_cloud=None, default_keep_running='never',
+                    ssh_public_keys=None, log_verbosity=1, execution_timeout=30,
+                    usage_email='never', cloud_parameters=None):
+        """
+        Create a new user into SlipStream.
+
+        :param username: The user's username (need to be unique)
+        :type username: str
+        :param password: The user's password
+        :type password: str
+        :param email: The user's email address
+        :type email: str
+        :param first_name: The user's first name
+        :type first_name: str
+        :param last_name: The user's last name
+        :type last_name: str
+        :param organization: The user's organization/company
+        :type organization: str
+        :param roles: The user's roles
+        :type roles: list
+        :param privileged: true to create a privileged user, false otherwise
+        :type privileged: bool
+        :param default_cloud: The user's default Cloud
+        :type default_cloud: str
+        :param default_keep_running: The user's default setting for keep-running.
+        :type default_keep_running: 'always' or 'never' or 'on-success' or 'on-error'
+        :param ssh_public_keys: The SSH public keys to inject into deployed instances.
+                                One key per line.
+        :type ssh_public_keys: str
+        :param log_verbosity: The verbosity level of the logging inside instances.
+                              0: Actions, 1: Steps, 2: Details, 3: Debugging
+        :type log_verbosity: 0 or 1 or 2 or 3
+        :param execution_timeout: If a deployment stays in a transitionnal state
+                                  for more than this value (in minutes) it will
+                                  be forcefully terminated.
+        :type execution_timeout: int
+        :param usage_email: Set it to 'daily' if you want to receive daily email
+                            with a summary of your Cloud usage of the previous day.
+        :type usage_email: 'never' or 'daily'
+        :param cloud_parameters: To add Cloud specific parameters (like credentials).
+                                 A dict with the cloud name as the key and a dict of parameter as the value.
+        :type cloud_parameters: dict
+
+        """
+        attrib = dict(name=username, password=password, email=email,
+                      firstName=first_name, lastName=last_name,
+                      organization=organization, roles=roles, issuper=privileged,
+                      state='ACTIVE', resourceUri='user/{}'.format(username))
+        _attrib = self._dict_values_to_string(attrib)
+
+        parameters = {}
+        if cloud_parameters is not None:
+            for cloud, params in six.iteritems(cloud_parameters):
+                for name, value in six.iteritems(params):
+                    parameters['{}.{}'.format(cloud, name)] = value
+
+        self._add_to_dict_if_not_none(parameters, 'General.default.cloud.service', default_cloud)
+        self._add_to_dict_if_not_none(parameters, 'General.keep-running', default_keep_running)
+        self._add_to_dict_if_not_none(parameters, 'General.Verbosity Level', log_verbosity)
+        self._add_to_dict_if_not_none(parameters, 'General.Timeout', execution_timeout)
+        self._add_to_dict_if_not_none(parameters, 'General.mail-usage', usage_email)
+        self._add_to_dict_if_not_none(parameters, 'General.ssh.public.key', ssh_public_keys)
+
+        _parameters = self._dict_values_to_string(parameters)
+
+        user_xml = ET.Element('user', **_attrib)
+
+        params_xml = ET.SubElement(user_xml, 'parameters')
+        for name, value in six.iteritems(_parameters):
+            category = name.split('.', 1)[0]
+            entry_xml = ET.SubElement(params_xml, 'entry')
+            ET.SubElement(entry_xml, 'string').text = name
+            param_xml = ET.SubElement(entry_xml, 'parameter', name=name, category=category)
+            ET.SubElement(param_xml, 'value').text = value
+
+        response = self._xml_put('/user/{}'.format(username), etree.tostring(user_xml, 'UTF-8'))
+
+        if not (200 <= response.status_code < 300):
+            reason = ''
+            try:
+                reason = etree.fromstring(response.text).get('detail')
+            except:
+                pass
+            else:
+                raise SlipStreamError(reason)
+        response.raise_for_status()
+
+        return True
+
 
     def list_applications(self):
         """
@@ -148,7 +263,7 @@ class Api(object):
                              path=_mod(elem.get('resourceUri'),
                                       with_version=False))
 
-    
+
 
     def get_element(self, path):
         """
@@ -307,7 +422,7 @@ class Api(object):
                tolerate_failures=None, check_ssh_key=False, raw_params=None):
         """
         Run a component or an application
-        
+
         :param path: The path of the component/application to deploy
         :type path: str
         :param cloud: A string or a dict to specify on which Cloud(s) to deploy the component/application.
