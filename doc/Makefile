@@ -227,7 +227,9 @@ dummy:
 
 gh-pages:
 	git checkout gh-pages
-	rm -rf .
+	cd ..
+	rm .git/index
+	git clean -fdx
 	git checkout master doc/Makefile doc/source src
 	git reset HEAD
 	cd doc
