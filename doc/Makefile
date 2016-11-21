@@ -232,7 +232,7 @@ gh-pages:
 	git reset HEAD
 	cd doc
 	make html
-	mv -fv build/html/* ../
+	cp -rfv build/html/. ../
 	cd ..
 	rm -rf doc src
 	git add -A
