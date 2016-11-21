@@ -1,0 +1,795 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>slipstream.api.api &mdash; SlipStream Python API 0.8.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="SlipStream Python API 0.8.1 documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="../../../index.html" class="icon icon-home"> SlipStream Python API
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../../index.html">SlipStream Python API</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      
+    <li>slipstream.api.api</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <h1>Source code for slipstream.api.api</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">import</span> <span class="nn">stat</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">six</span> <span class="k">import</span> <span class="n">string_types</span><span class="p">,</span> <span class="n">integer_types</span>
+<span class="kn">from</span> <span class="nn">six.moves.urllib.parse</span> <span class="k">import</span> <span class="n">urlparse</span>
+<span class="kn">from</span> <span class="nn">six.moves.http_cookiejar</span> <span class="k">import</span> <span class="n">MozillaCookieJar</span>
+
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">models</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">defusedxml</span> <span class="k">import</span> <span class="n">cElementTree</span> <span class="k">as</span> <span class="n">etree</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">defusedxml</span> <span class="k">import</span> <span class="n">ElementTree</span> <span class="k">as</span> <span class="n">etree</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">xml.etree.cElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">xml.etree.ElementTree</span> <span class="k">as</span> <span class="nn">ET</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="n">DEFAULT_ENDPOINT</span> <span class="o">=</span> <span class="s1">&#39;https://nuv.la&#39;</span>
+<span class="n">DEFAULT_COOKIE_FILE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="s1">&#39;~/.slipstream/cookies.txt&#39;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_mod_url</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;module&#39;</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s1">&#39;/module/&#39;</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_mod</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">with_version</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">with_version</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+
+<span class="k">def</span> <span class="nf">get_module_type</span><span class="p">(</span><span class="n">category</span><span class="p">):</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;image&#39;</span><span class="p">:</span> <span class="s1">&#39;component&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;deployment&#39;</span><span class="p">:</span> <span class="s1">&#39;application&#39;</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">category</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">category</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+
+
+<span class="k">def</span> <span class="nf">ElementTree__iter</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="s1">&#39;iter&#39;</span><span class="p">,</span>  <span class="c1"># Python 2.7 and above</span>
+                   <span class="n">root</span><span class="o">.</span><span class="n">getiterator</span><span class="p">)</span>  <span class="c1"># Python 2.6 compatibility</span>
+
+
+<span class="k">class</span> <span class="nc">SlipStreamError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SlipStreamError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">reason</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="n">reason</span>
+
+
+<span class="k">class</span> <span class="nc">SessionStore</span><span class="p">(</span><span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A ``requests.Session`` subclass implementing a file-based session store.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cookie_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SessionStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cookie_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cookie_file</span> <span class="o">=</span> <span class="n">DEFAULT_COOKIE_FILE</span>
+        <span class="n">cookie_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">cookie_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cookies</span> <span class="o">=</span> <span class="n">MozillaCookieJar</span><span class="p">(</span><span class="n">cookie_file</span><span class="p">)</span>
+        <span class="c1"># Create the $HOME/.slipstream dir if it doesn&#39;t exist</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">cookie_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">cookie_dir</span><span class="p">,</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IRUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IWUSR</span> <span class="o">|</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IXUSR</span><span class="p">)</span>
+        <span class="c1"># Load existing cookies if the cookies.txt exists</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">cookie_file</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">ignore_discard</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">clear_expired_cookies</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SessionStore</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">ignore_discard</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span>
+
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">domain</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Clear cookies for the specified domain.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="n">domain</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">save</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="Api"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api">[docs]</a><span class="k">class</span> <span class="nc">Api</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; This class is a Python wrapper&amp;helper of the native SlipStream REST API&quot;&quot;&quot;</span>
+
+    <span class="n">GLOBAL_PARAMETERS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bypass-ssh-check&#39;</span><span class="p">,</span> <span class="s1">&#39;refqname&#39;</span><span class="p">,</span> <span class="s1">&#39;keep-running&#39;</span><span class="p">,</span> <span class="s1">&#39;tags&#39;</span><span class="p">,</span> <span class="s1">&#39;mutable&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">]</span>
+    <span class="n">KEEP_RUNNING_VALUES</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;always&#39;</span><span class="p">,</span> <span class="s1">&#39;never&#39;</span><span class="p">,</span> <span class="s1">&#39;on-success&#39;</span><span class="p">,</span> <span class="s1">&#39;on-error&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cookie_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">insecure</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span> <span class="o">=</span> <span class="n">DEFAULT_ENDPOINT</span> <span class="k">if</span> <span class="n">endpoint</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">endpoint</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span> <span class="o">=</span> <span class="n">SessionStore</span><span class="p">(</span><span class="n">cookie_file</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="p">(</span><span class="n">insecure</span> <span class="o">==</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;Accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">insecure</span><span class="p">:</span>
+            <span class="n">requests</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">(</span>
+                <span class="n">requests</span><span class="o">.</span><span class="n">packages</span><span class="o">.</span><span class="n">urllib3</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">InsecureRequestWarning</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Api.login"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.login">[docs]</a>    <span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param username: </span>
+<span class="sd">        :param password: </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/auth/login&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
+            <span class="s1">&#39;password&#39;</span><span class="p">:</span> <span class="n">password</span>
+        <span class="p">})</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Api.logout"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.logout">[docs]</a>    <span class="k">def</span> <span class="nf">logout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/logout&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">clear</span><span class="p">(</span><span class="n">url</span><span class="o">.</span><span class="n">netloc</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_xml_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">url</span><span class="p">),</span>
+                                    <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">},</span>
+                                    <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">DefusedXMLParser</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">feed</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">parser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_xml_put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">url</span><span class="p">),</span>
+                                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">,</span>
+                                         <span class="s1">&#39;Content-Type&#39;</span><span class="p">:</span> <span class="s1">&#39;application/xml&#39;</span><span class="p">},</span>
+                                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_json_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">url</span><span class="p">),</span>
+                                    <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/json&#39;</span><span class="p">},</span>
+                                    <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_add_to_dict_if_not_none</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_dict_values_to_string</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">d</span><span class="p">)}</span>
+
+
+<div class="viewcode-block" id="Api.create_user"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.create_user">[docs]</a>    <span class="k">def</span> <span class="nf">create_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">first_name</span><span class="p">,</span> <span class="n">last_name</span><span class="p">,</span>
+                    <span class="n">organization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">roles</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">privileged</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">default_cloud</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_keep_running</span><span class="o">=</span><span class="s1">&#39;never&#39;</span><span class="p">,</span>
+                    <span class="n">ssh_public_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log_verbosity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">execution_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                    <span class="n">usage_email</span><span class="o">=</span><span class="s1">&#39;never&#39;</span><span class="p">,</span> <span class="n">cloud_parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a new user into SlipStream.</span>
+
+<span class="sd">        :param username: The user&#39;s username (need to be unique)</span>
+<span class="sd">        :type username: str</span>
+<span class="sd">        :param password: The user&#39;s password</span>
+<span class="sd">        :type password: str</span>
+<span class="sd">        :param email: The user&#39;s email address</span>
+<span class="sd">        :type email: str</span>
+<span class="sd">        :param first_name: The user&#39;s first name</span>
+<span class="sd">        :type first_name: str</span>
+<span class="sd">        :param last_name: The user&#39;s last name</span>
+<span class="sd">        :type last_name: str</span>
+<span class="sd">        :param organization: The user&#39;s organization/company</span>
+<span class="sd">        :type organization: str</span>
+<span class="sd">        :param roles: The user&#39;s roles</span>
+<span class="sd">        :type roles: list</span>
+<span class="sd">        :param privileged: true to create a privileged user, false otherwise</span>
+<span class="sd">        :type privileged: bool</span>
+<span class="sd">        :param default_cloud: The user&#39;s default Cloud</span>
+<span class="sd">        :type default_cloud: str</span>
+<span class="sd">        :param default_keep_running: The user&#39;s default setting for keep-running.</span>
+<span class="sd">        :type default_keep_running: &#39;always&#39; or &#39;never&#39; or &#39;on-success&#39; or &#39;on-error&#39;</span>
+<span class="sd">        :param ssh_public_keys: The SSH public keys to inject into deployed instances.</span>
+<span class="sd">                                One key per line.</span>
+<span class="sd">        :type ssh_public_keys: str</span>
+<span class="sd">        :param log_verbosity: The verbosity level of the logging inside instances.</span>
+<span class="sd">                              0: Actions, 1: Steps, 2: Details, 3: Debugging</span>
+<span class="sd">        :type log_verbosity: 0 or 1 or 2 or 3</span>
+<span class="sd">        :param execution_timeout: If a deployment stays in a transitionnal state</span>
+<span class="sd">                                  for more than this value (in minutes) it will</span>
+<span class="sd">                                  be forcefully terminated.</span>
+<span class="sd">        :type execution_timeout: int</span>
+<span class="sd">        :param usage_email: Set it to &#39;daily&#39; if you want to receive daily email</span>
+<span class="sd">                            with a summary of your Cloud usage of the previous day.</span>
+<span class="sd">        :type usage_email: &#39;never&#39; or &#39;daily&#39;</span>
+<span class="sd">        :param cloud_parameters: To add Cloud specific parameters (like credentials).</span>
+<span class="sd">                                 A dict with the cloud name as the key and a dict of parameter as the value.</span>
+<span class="sd">        :type cloud_parameters: dict</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">attrib</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span>
+                      <span class="n">firstName</span><span class="o">=</span><span class="n">first_name</span><span class="p">,</span> <span class="n">lastName</span><span class="o">=</span><span class="n">last_name</span><span class="p">,</span>
+                      <span class="n">organization</span><span class="o">=</span><span class="n">organization</span><span class="p">,</span> <span class="n">roles</span><span class="o">=</span><span class="n">roles</span><span class="p">,</span> <span class="n">issuper</span><span class="o">=</span><span class="n">privileged</span><span class="p">,</span>
+                      <span class="n">state</span><span class="o">=</span><span class="s1">&#39;ACTIVE&#39;</span><span class="p">,</span> <span class="n">resourceUri</span><span class="o">=</span><span class="s1">&#39;user/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">username</span><span class="p">))</span>
+        <span class="n">_attrib</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict_values_to_string</span><span class="p">(</span><span class="n">attrib</span><span class="p">)</span>
+
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">cloud_parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">cloud</span><span class="p">,</span> <span class="n">params</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">cloud_parameters</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+                    <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cloud</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_dict_if_not_none</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="s1">&#39;General.default.cloud.service&#39;</span><span class="p">,</span> <span class="n">default_cloud</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_dict_if_not_none</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="s1">&#39;General.keep-running&#39;</span><span class="p">,</span> <span class="n">default_keep_running</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_dict_if_not_none</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="s1">&#39;General.Verbosity Level&#39;</span><span class="p">,</span> <span class="n">log_verbosity</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_dict_if_not_none</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="s1">&#39;General.Timeout&#39;</span><span class="p">,</span> <span class="n">execution_timeout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_dict_if_not_none</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="s1">&#39;General.mail-usage&#39;</span><span class="p">,</span> <span class="n">usage_email</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_to_dict_if_not_none</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="s1">&#39;General.ssh.public.key&#39;</span><span class="p">,</span> <span class="n">ssh_public_keys</span><span class="p">)</span>
+
+        <span class="n">_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dict_values_to_string</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
+
+        <span class="n">user_xml</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">_attrib</span><span class="p">)</span>
+
+        <span class="n">params_xml</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">user_xml</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">_parameters</span><span class="p">):</span>
+            <span class="n">category</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">entry_xml</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">params_xml</span><span class="p">,</span> <span class="s1">&#39;entry&#39;</span><span class="p">)</span>
+            <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">entry_xml</span><span class="p">,</span> <span class="s1">&#39;string&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="n">param_xml</span> <span class="o">=</span> <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">entry_xml</span><span class="p">,</span> <span class="s1">&#39;parameter&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">category</span><span class="p">)</span>
+            <span class="n">ET</span><span class="o">.</span><span class="n">SubElement</span><span class="p">(</span><span class="n">param_xml</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_put</span><span class="p">(</span><span class="s1">&#39;/user/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">username</span><span class="p">),</span> <span class="n">etree</span><span class="o">.</span><span class="n">tostring</span><span class="p">(</span><span class="n">user_xml</span><span class="p">,</span> <span class="s1">&#39;UTF-8&#39;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">200</span> <span class="o">&lt;=</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&lt;</span> <span class="mi">300</span><span class="p">):</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">reason</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;detail&#39;</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">SlipStreamError</span><span class="p">(</span><span class="n">reason</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="Api.list_applications"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.list_applications">[docs]</a>    <span class="k">def</span> <span class="nf">list_applications</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List apps in the appstore</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_get</span><span class="p">(</span><span class="s1">&#39;/appstore&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">ElementTree__iter</span><span class="p">(</span><span class="n">root</span><span class="p">)(</span><span class="s1">&#39;item&#39;</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">models</span><span class="o">.</span><span class="n">App</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">),</span>
+                             <span class="nb">type</span><span class="o">=</span><span class="n">get_module_type</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)),</span>
+                             <span class="n">version</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;version&#39;</span><span class="p">)),</span>
+                             <span class="n">path</span><span class="o">=</span><span class="n">_mod</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;resourceUri&#39;</span><span class="p">),</span>
+                                      <span class="n">with_version</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="Api.get_element"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.get_element">[docs]</a>    <span class="k">def</span> <span class="nf">get_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get details about a project, a component or an application</span>
+
+<span class="sd">        :param path: The path of an element (project/component/application)</span>
+<span class="sd">        :type path: str</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">_mod_url</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">403</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Access denied for path: </span><span class="si">{0}</span><span class="s2">. Skipping.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+            <span class="k">raise</span>
+
+        <span class="n">module</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">Module</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;shortName&#39;</span><span class="p">),</span>
+                               <span class="nb">type</span><span class="o">=</span><span class="n">get_module_type</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">)),</span>
+                               <span class="n">created</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;creation&#39;</span><span class="p">),</span>
+                               <span class="n">modified</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lastModified&#39;</span><span class="p">),</span>
+                               <span class="n">description</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">),</span>
+                               <span class="n">version</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;version&#39;</span><span class="p">)),</span>
+                               <span class="n">path</span><span class="o">=</span><span class="n">_mod</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;parentUri&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                                                   <span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;shortName&#39;</span><span class="p">))))</span>
+        <span class="k">return</span> <span class="n">module</span></div>
+
+<div class="viewcode-block" id="Api.list_project_content"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.list_project_content">[docs]</a>    <span class="k">def</span> <span class="nf">list_project_content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">recurse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List the content of a project</span>
+
+<span class="sd">        :param path: The path of a project. If None, list the root project.</span>
+<span class="sd">        :type path: str</span>
+<span class="sd">        :param recurse: Get project content recursively</span>
+<span class="sd">        :type recurse: bool</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting with path: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="c1"># Path normalization</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;/module&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">_mod_url</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Using normalized URL: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="p">))</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">403</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Access denied for path: </span><span class="si">{0}</span><span class="s2">. Skipping.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+                <span class="k">return</span>
+            <span class="k">raise</span>
+
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">ElementTree__iter</span><span class="p">(</span><span class="n">root</span><span class="p">)(</span><span class="s1">&#39;item&#39;</span><span class="p">):</span>
+            <span class="c1"># Compute module path</span>
+            <span class="k">if</span> <span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;resourceUri&#39;</span><span class="p">):</span>
+                <span class="n">app_path</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;resourceUri&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">app_path</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;parentUri&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">),</span>
+                                      <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;shortName&#39;</span><span class="p">),</span>
+                                                <span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">),</span>
+                                                <span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;version&#39;</span><span class="p">)]))</span>
+
+            <span class="n">module_type</span> <span class="o">=</span> <span class="n">get_module_type</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">))</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found &#39;</span><span class="si">{0}</span><span class="s2">&#39; with path: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">module_type</span><span class="p">,</span> <span class="n">app_path</span><span class="p">))</span>
+            <span class="n">app</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">App</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">),</span>
+                             <span class="nb">type</span><span class="o">=</span><span class="n">module_type</span><span class="p">,</span>
+                             <span class="n">version</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;version&#39;</span><span class="p">)),</span>
+                             <span class="n">path</span><span class="o">=</span><span class="n">_mod</span><span class="p">(</span><span class="n">app_path</span><span class="p">,</span> <span class="n">with_version</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+            <span class="k">yield</span> <span class="n">app</span>
+            <span class="k">if</span> <span class="n">app</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;project&#39;</span> <span class="ow">and</span> <span class="n">recurse</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Recursing into path: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">app_path</span><span class="p">))</span>
+                <span class="k">for</span> <span class="n">app</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">list_project_content</span><span class="p">(</span><span class="n">app_path</span><span class="p">,</span> <span class="n">recurse</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="n">app</span></div>
+
+<div class="viewcode-block" id="Api.list_deployments"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.list_deployments">[docs]</a>    <span class="k">def</span> <span class="nf">list_deployments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inactive</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List deployments</span>
+
+<span class="sd">        :param inactive: Include inactive deployments. Default to False</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_get</span><span class="p">(</span><span class="s1">&#39;/run&#39;</span><span class="p">,</span> <span class="n">activeOnly</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">inactive</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">ElementTree__iter</span><span class="p">(</span><span class="n">root</span><span class="p">)(</span><span class="s1">&#39;item&#39;</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">models</span><span class="o">.</span><span class="n">Deployment</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;uuid&#39;</span><span class="p">)),</span>
+                                    <span class="n">module</span><span class="o">=</span><span class="n">_mod</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;moduleResourceUri&#39;</span><span class="p">)),</span>
+                                    <span class="n">status</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;status&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+                                    <span class="n">started_at</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;startTime&#39;</span><span class="p">),</span>
+                                    <span class="n">last_state_change</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lastStateChangeTime&#39;</span><span class="p">),</span>
+                                    <span class="n">cloud</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cloudServiceNames&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Api.get_deployment"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.get_deployment">[docs]</a>    <span class="k">def</span> <span class="nf">get_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a deployment</span>
+
+<span class="sd">        :param deployment_id: The deployment UUID of the deployment to get</span>
+<span class="sd">        :type deployment_id: str or UUID</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_get</span><span class="p">(</span><span class="s1">&#39;/run/&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">models</span><span class="o">.</span><span class="n">Deployment</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;uuid&#39;</span><span class="p">)),</span>
+                                 <span class="n">module</span><span class="o">=</span><span class="n">_mod</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;moduleResourceUri&#39;</span><span class="p">)),</span>
+                                 <span class="n">status</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+                                 <span class="n">started_at</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;startTime&#39;</span><span class="p">),</span>
+                                 <span class="n">last_state_change</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;lastStateChangeTime&#39;</span><span class="p">),</span>
+                                 <span class="n">cloud</span><span class="o">=</span><span class="n">root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cloudServiceNames&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Api.list_virtualmachines"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.list_virtualmachines">[docs]</a>    <span class="k">def</span> <span class="nf">list_virtualmachines</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List virtual machines</span>
+
+<span class="sd">        :param deployment_id: Retrieve only virtual machines about the specified run_id. Default to None</span>
+<span class="sd">        :type deployment_id: str or UUID</span>
+<span class="sd">        :param offset: Retrieve virtual machines starting by the offset&lt;exp&gt;th&lt;/exp&gt; one. Default to 0</span>
+<span class="sd">        :param limit: Retrieve at most &#39;limit&#39; virtual machines. Default to 20</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">deployment_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_deployment_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">)</span>
+
+        <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_get</span><span class="p">(</span><span class="s1">&#39;/vms&#39;</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">runUuid</span><span class="o">=</span><span class="n">_deployment_id</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">ElementTree__iter</span><span class="p">(</span><span class="n">root</span><span class="p">)(</span><span class="s1">&#39;vm&#39;</span><span class="p">):</span>
+            <span class="n">run_id_str</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;runUuid&#39;</span><span class="p">)</span>
+            <span class="n">run_id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">run_id_str</span><span class="p">)</span> <span class="k">if</span> <span class="n">run_id_str</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">yield</span> <span class="n">models</span><span class="o">.</span><span class="n">VirtualMachine</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;instanceId&#39;</span><span class="p">),</span>
+                                        <span class="n">cloud</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cloud&#39;</span><span class="p">),</span>
+                                        <span class="n">status</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+                                        <span class="n">deployment_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+                                        <span class="n">deployment_owner</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;runOwner&#39;</span><span class="p">),</span>
+                                        <span class="n">ip</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ip&#39;</span><span class="p">),</span>
+                                        <span class="n">cpu</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cpu&#39;</span><span class="p">),</span>
+                                        <span class="n">ram</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ram&#39;</span><span class="p">),</span>
+                                        <span class="n">disk</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;disk&#39;</span><span class="p">),</span>
+                                        <span class="n">instance_type</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;instanceType&#39;</span><span class="p">),</span>
+                                        <span class="n">is_usable</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;isUsable&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Api.build_component"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.build_component">[docs]</a>    <span class="k">def</span> <span class="nf">build_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">cloud</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param path: The path to a component</span>
+<span class="sd">        :type path: str</span>
+<span class="sd">        :param cloud: The Cloud on which to build the component. If None, the user default Cloud will be used.</span>
+<span class="sd">        :type cloud: str</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span> <span class="o">+</span> <span class="s1">&#39;/run&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;Machine&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;refqname&#39;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span>
+            <span class="s1">&#39;parameter--cloudservice&#39;</span><span class="p">:</span> <span class="n">cloud</span> <span class="ow">or</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Api.deploy"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.deploy">[docs]</a>    <span class="k">def</span> <span class="nf">deploy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">cloud</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">keep_running</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scalable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+               <span class="n">tolerate_failures</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check_ssh_key</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">raw_params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run a component or an application</span>
+
+<span class="sd">        :param path: The path of the component/application to deploy</span>
+<span class="sd">        :type path: str</span>
+<span class="sd">        :param cloud: A string or a dict to specify on which Cloud(s) to deploy the component/application.</span>
+<span class="sd">                      To deploy a component simply specify the Cloud name as a string.</span>
+<span class="sd">                      To deploy a deployment specify a dict with the nodenames as keys and Cloud names as values.</span>
+<span class="sd">                      If not specified the user default cloud will be used.</span>
+<span class="sd">        :type cloud: str or dict</span>
+<span class="sd">        :param parameters: A dict of parameters to redefine for this deployment.</span>
+<span class="sd">                           To redefine a parameter of a node use &quot;&lt;nodename&gt;&quot; as keys and dict of parameters as values.</span>
+<span class="sd">                           To redefine a parameter of a component or a global parameter use &quot;&lt;parametername&gt;&quot; as the key.</span>
+<span class="sd">        :type parameters: dict</span>
+<span class="sd">        :param tags: List of tags that can be used to identify or annotate a deployment</span>
+<span class="sd">        :type tags: str or list</span>
+<span class="sd">        :param keep_running: [Only apply to applications] Define when to terminate or not a deployment when it reach the</span>
+<span class="sd">                             &#39;Ready&#39; state. Possibles values: &#39;always&#39;, &#39;never&#39;, &#39;on-success&#39;, &#39;on-error&#39;.</span>
+<span class="sd">                             If scalable is set to True, this value is ignored and it will behave as if it was set to &#39;always&#39;.</span>
+<span class="sd">                             If not specified the user default will be used.</span>
+<span class="sd">        :type keep_running: &#39;always&#39; or &#39;never&#39; or &#39;on-success&#39; or &#39;on-error&#39;</span>
+<span class="sd">        :param scalable: [Only apply to applications] True to start a scalable deployment. Default: False</span>
+<span class="sd">        :type scalable: bool</span>
+<span class="sd">        :param multiplicity: [Only apply to applications] A dict to specify how many instances to start per node.</span>
+<span class="sd">                             Nodenames as keys and number of instances to start as values.</span>
+<span class="sd">        :type multiplicity: bool</span>
+<span class="sd">        :param tolerate_failures: [Only apply to applications] A dict to specify how many failures to tolerate per node.</span>
+<span class="sd">                                  Nodenames as keys and number of failure to tolerate as values.</span>
+<span class="sd">        :type tolerate_failures: dict</span>
+<span class="sd">        :param check_ssh_key: Set it to True if you want the SlipStream server to check if you have a public ssh key</span>
+<span class="sd">                              defined in your user profile. Useful if you want to ensure you will have access to VMs.</span>
+<span class="sd">        :type check_ssh_key: bool</span>
+<span class="sd">        :param raw_params: This allows you to pass parameters directly in the request to the SlipStream server.</span>
+<span class="sd">                           Keys must be formatted in the format understood by the SlipStream server.</span>
+<span class="sd">        :type raw_params: dict</span>
+
+<span class="sd">        :return: The deployment UUID of the newly created deployment</span>
+<span class="sd">        :rtype: uuid.UUID</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">_raw_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span> <span class="k">if</span> <span class="n">raw_params</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">raw_params</span>
+        <span class="n">_raw_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_parameters_to_raw_params</span><span class="p">(</span><span class="n">parameters</span><span class="p">))</span>
+        <span class="n">_raw_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_clouds_to_raw_params</span><span class="p">(</span><span class="n">cloud</span><span class="p">))</span>
+        <span class="n">_raw_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_multiplicity_to_raw_params</span><span class="p">(</span><span class="n">multiplicity</span><span class="p">))</span>
+        <span class="n">_raw_params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_convert_tolerate_failures_to_raw_params</span><span class="p">(</span><span class="n">tolerate_failures</span><span class="p">))</span>
+        <span class="n">_raw_params</span><span class="p">[</span><span class="s1">&#39;refqname&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">path</span>
+
+        <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+            <span class="n">_raw_params</span><span class="p">[</span><span class="s1">&#39;tags&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tags</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tags</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">keep_running</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">keep_running</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">KEEP_RUNNING_VALUES</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;&quot;keep_running&quot; should be one of </span><span class="si">{}</span><span class="s1">, not &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">KEEP_RUNNING_VALUES</span><span class="p">,</span>
+                                                                                     <span class="n">keep_running</span><span class="p">))</span>
+            <span class="n">_raw_params</span><span class="p">[</span><span class="s1">&#39;keep-running&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keep_running</span>
+
+        <span class="k">if</span> <span class="n">scalable</span><span class="p">:</span>
+            <span class="n">_raw_params</span><span class="p">[</span><span class="s1">&#39;mutable&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;on&#39;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">check_ssh_key</span><span class="p">:</span>
+            <span class="n">_raw_params</span><span class="p">[</span><span class="s1">&#39;bypass-ssh-check&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;true&#39;</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span> <span class="o">+</span> <span class="s1">&#39;/run&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">_raw_params</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">409</span><span class="p">:</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="n">etree</span><span class="o">.</span><span class="n">fromstring</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;detail&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">SlipStreamError</span><span class="p">(</span><span class="n">reason</span><span class="p">)</span>
+
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="n">deployment_id</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Api.terminate"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.terminate">[docs]</a>    <span class="k">def</span> <span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment_id</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Terminate a deployment</span>
+
+<span class="sd">        :param deployment_id: The UUID of the deployment to terminate</span>
+<span class="sd">        :type deployment_id: str or uuid.UUID</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">/run/</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">deployment_id</span><span class="p">))</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Api.usage"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.usage">[docs]</a>    <span class="k">def</span> <span class="nf">usage</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get current usage and quota by cloud service.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xml_get</span><span class="p">(</span><span class="s1">&#39;/dashboard&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">elem</span> <span class="ow">in</span> <span class="n">ElementTree__iter</span><span class="p">(</span><span class="n">root</span><span class="p">)(</span><span class="s1">&#39;cloudUsage&#39;</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">models</span><span class="o">.</span><span class="n">Usage</span><span class="p">(</span><span class="n">cloud</span><span class="o">=</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cloud&#39;</span><span class="p">),</span>
+                               <span class="n">quota</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;vmQuota&#39;</span><span class="p">)),</span>
+                               <span class="n">run_usage</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userRunUsage&#39;</span><span class="p">)),</span>
+                               <span class="n">vm_usage</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userVmUsage&#39;</span><span class="p">)),</span>
+                               <span class="n">inactive_vm_usage</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userInactiveVmUsage&#39;</span><span class="p">)),</span>
+                               <span class="n">others_vm_usage</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;othersVmUsage&#39;</span><span class="p">)),</span>
+                               <span class="n">pending_vm_usage</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pendingVmUsage&#39;</span><span class="p">)),</span>
+                               <span class="n">unknown_vm_usage</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">elem</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;unknownVmUsage&#39;</span><span class="p">)))</span></div>
+
+<div class="viewcode-block" id="Api.publish"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.publish">[docs]</a>    <span class="k">def</span> <span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Publish a component or an application to the appstore</span>
+
+<span class="sd">        :param path: The path to a component or an application</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">/publish&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span>
+                                                      <span class="n">_mod_url</span><span class="p">(</span><span class="n">path</span><span class="p">)))</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Api.unpublish"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.unpublish">[docs]</a>    <span class="k">def</span> <span class="nf">unpublish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unpublish a component or an application from the appstore</span>
+
+<span class="sd">        :param path: The path to a component or an application</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">/publish&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span>
+                                                         <span class="n">_mod_url</span><span class="p">(</span><span class="n">path</span><span class="p">)))</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Api.delete_element"><a class="viewcode-back" href="../../../index.html#slipstream.api.Api.delete_element">[docs]</a>    <span class="k">def</span> <span class="nf">delete_element</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Delete a project, a component or an application</span>
+
+<span class="sd">        :param path: The path to a component or an application</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">_mod_url</span><span class="p">(</span><span class="n">path</span><span class="p">)))</span>
+
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_type</span><span class="p">(</span><span class="n">obj_name</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">allowed_types</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">allowed_types</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid type &quot;</span><span class="si">{}</span><span class="s1">&quot; for &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="n">obj_name</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_convert_clouds_to_raw_params</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">clouds</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">_convert_per_node_parameter_to_raw_params</span><span class="p">(</span><span class="s1">&#39;cloudservice&#39;</span><span class="p">,</span> <span class="n">clouds</span><span class="p">,</span> <span class="n">allowed_types</span><span class="o">=</span><span class="n">string_types</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_convert_multiplicity_to_raw_params</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">multiplicity</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">_convert_per_node_parameter_to_raw_params</span><span class="p">(</span><span class="s1">&#39;multiplicity&#39;</span><span class="p">,</span> <span class="n">multiplicity</span><span class="p">,</span>
+                                                             <span class="n">allowed_types</span><span class="o">=</span><span class="p">(</span><span class="n">integer_types</span><span class="p">,</span> <span class="n">string_types</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_convert_tolerate_failures_to_raw_params</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">tolerate_failures</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">_convert_per_node_parameter_to_raw_params</span><span class="p">(</span><span class="s1">&#39;max-provisioning-failures&#39;</span><span class="p">,</span> <span class="n">tolerate_failures</span><span class="p">,</span>
+                                                             <span class="n">allowed_types</span><span class="o">=</span><span class="p">(</span><span class="n">integer_types</span><span class="p">,</span> <span class="n">string_types</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_convert_per_node_parameter_to_raw_params</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">allowed_types</span><span class="o">=</span><span class="p">(</span><span class="n">string_types</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span>
+                                                  <span class="n">allow_no_node</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">raw_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">raw_params</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">cls</span><span class="o">.</span><span class="n">_check_type</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">),</span> <span class="n">value</span><span class="p">,</span> <span class="n">allowed_types</span><span class="p">)</span>
+                <span class="n">raw_params</span><span class="p">[</span><span class="s1">&#39;parameter--node--</span><span class="si">{}</span><span class="s1">--</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">elif</span> <span class="n">allow_no_node</span><span class="p">:</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">_check_type</span><span class="p">(</span><span class="n">parameter_name</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">allowed_types</span><span class="p">)</span>
+            <span class="n">raw_params</span><span class="p">[</span><span class="s1">&#39;parameter--</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">parameter_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">parameters</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">_check_type</span><span class="p">(</span><span class="n">parameter_name</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">raw_params</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_convert_parameters_to_raw_params</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+        <span class="n">raw_params</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">raw_params</span>
+
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="c1"># Redefine node parameters</span>
+                <span class="k">for</span> <span class="n">parameter_name</span><span class="p">,</span> <span class="n">parameter_value</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="n">raw_params</span><span class="p">[</span><span class="s1">&#39;parameter--node--</span><span class="si">{}</span><span class="s1">--</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">parameter_name</span><span class="p">)]</span> <span class="o">=</span> <span class="n">parameter_value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">GLOBAL_PARAMETERS</span><span class="p">:</span>
+                    <span class="c1"># Redefine a global parameter</span>
+                    <span class="n">raw_params</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Redefine a component parameter</span>
+                    <span class="n">raw_params</span><span class="p">[</span><span class="s1">&#39;parameter--</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">key</span><span class="p">)]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="n">raw_params</span></div>
+
+
+
+</pre></div>
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, SixSq.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.8.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

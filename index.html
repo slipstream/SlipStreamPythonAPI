@@ -1,1 +1,471 @@
-First commit
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>SlipStream Python API documentation &mdash; SlipStream Python API 0.8.1 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="SlipStream Python API 0.8.1 documentation" href="#"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="#" class="icon icon-home"> SlipStream Python API
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">SlipStream Python API documentation</a><ul>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</div>
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="#">SlipStream Python API</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="#">Docs</a> &raquo;</li>
+      
+    <li>SlipStream Python API documentation</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/index.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="slipstream-python-api-documentation">
+<h1>SlipStream Python API documentation<a class="headerlink" href="#slipstream-python-api-documentation" title="Permalink to this headline">¶</a></h1>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+</div>
+<table border="1" class="longtable docutils">
+<colgroup>
+<col width="10%" />
+<col width="90%" />
+</colgroup>
+<tbody valign="top">
+</tbody>
+</table>
+<span class="target" id="module-slipstream"></span><dl class="class">
+<dt id="slipstream.api.Api">
+<em class="property">class </em><code class="descclassname">slipstream.api.</code><code class="descname">Api</code><span class="sig-paren">(</span><em>endpoint=None</em>, <em>cookie_file=None</em>, <em>insecure=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class is a Python wrapper&amp;helper of the native SlipStream REST API</p>
+<dl class="method">
+<dt id="slipstream.api.Api.build_component">
+<code class="descname">build_component</code><span class="sig-paren">(</span><em>path</em>, <em>cloud=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.build_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.build_component" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>str</em>) &#8211; The path to a component</li>
+<li><strong>cloud</strong> (<em>str</em>) &#8211; The Cloud on which to build the component. If None, the user default Cloud will be used.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.create_user">
+<code class="descname">create_user</code><span class="sig-paren">(</span><em>username</em>, <em>password</em>, <em>email</em>, <em>first_name</em>, <em>last_name</em>, <em>organization=None</em>, <em>roles=''</em>, <em>privileged=False</em>, <em>default_cloud=None</em>, <em>default_keep_running='never'</em>, <em>ssh_public_keys=None</em>, <em>log_verbosity=1</em>, <em>execution_timeout=30</em>, <em>usage_email='never'</em>, <em>cloud_parameters=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.create_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.create_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new user into SlipStream.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>username</strong> (<em>str</em>) &#8211; The user&#8217;s username (need to be unique)</li>
+<li><strong>password</strong> (<em>str</em>) &#8211; The user&#8217;s password</li>
+<li><strong>email</strong> (<em>str</em>) &#8211; The user&#8217;s email address</li>
+<li><strong>first_name</strong> (<em>str</em>) &#8211; The user&#8217;s first name</li>
+<li><strong>last_name</strong> (<em>str</em>) &#8211; The user&#8217;s last name</li>
+<li><strong>organization</strong> (<em>str</em>) &#8211; The user&#8217;s organization/company</li>
+<li><strong>roles</strong> (<em>list</em>) &#8211; The user&#8217;s roles</li>
+<li><strong>privileged</strong> (<em>bool</em>) &#8211; true to create a privileged user, false otherwise</li>
+<li><strong>default_cloud</strong> (<em>str</em>) &#8211; The user&#8217;s default Cloud</li>
+<li><strong>default_keep_running</strong> (<em>'always' or 'never' or 'on-success' or 'on-error'</em>) &#8211; The user&#8217;s default setting for keep-running.</li>
+<li><strong>ssh_public_keys</strong> (<em>str</em>) &#8211; The SSH public keys to inject into deployed instances.
+One key per line.</li>
+<li><strong>log_verbosity</strong> (<em>0 or 1 or 2 or 3</em>) &#8211; The verbosity level of the logging inside instances.
+0: Actions, 1: Steps, 2: Details, 3: Debugging</li>
+<li><strong>execution_timeout</strong> (<em>int</em>) &#8211; If a deployment stays in a transitionnal state
+for more than this value (in minutes) it will
+be forcefully terminated.</li>
+<li><strong>usage_email</strong> (<em>'never' or 'daily'</em>) &#8211; Set it to &#8216;daily&#8217; if you want to receive daily email
+with a summary of your Cloud usage of the previous day.</li>
+<li><strong>cloud_parameters</strong> (<em>dict</em>) &#8211; To add Cloud specific parameters (like credentials).
+A dict with the cloud name as the key and a dict of parameter as the value.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.delete_element">
+<code class="descname">delete_element</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.delete_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.delete_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a project, a component or an application</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> &#8211; The path to a component or an application</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.deploy">
+<code class="descname">deploy</code><span class="sig-paren">(</span><em>path</em>, <em>cloud=None</em>, <em>parameters=None</em>, <em>tags=None</em>, <em>keep_running=None</em>, <em>scalable=False</em>, <em>multiplicity=None</em>, <em>tolerate_failures=None</em>, <em>check_ssh_key=False</em>, <em>raw_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.deploy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.deploy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a component or an application</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) &#8211; The path of the component/application to deploy</li>
+<li><strong>cloud</strong> (<em>str or dict</em>) &#8211; A string or a dict to specify on which Cloud(s) to deploy the component/application.
+To deploy a component simply specify the Cloud name as a string.
+To deploy a deployment specify a dict with the nodenames as keys and Cloud names as values.
+If not specified the user default cloud will be used.</li>
+<li><strong>parameters</strong> (<em>dict</em>) &#8211; A dict of parameters to redefine for this deployment.
+To redefine a parameter of a node use &#8220;&lt;nodename&gt;&#8221; as keys and dict of parameters as values.
+To redefine a parameter of a component or a global parameter use &#8220;&lt;parametername&gt;&#8221; as the key.</li>
+<li><strong>tags</strong> (<em>str or list</em>) &#8211; List of tags that can be used to identify or annotate a deployment</li>
+<li><strong>keep_running</strong> (<em>'always' or 'never' or 'on-success' or 'on-error'</em>) &#8211; [Only apply to applications] Define when to terminate or not a deployment when it reach the
+&#8216;Ready&#8217; state. Possibles values: &#8216;always&#8217;, &#8216;never&#8217;, &#8216;on-success&#8217;, &#8216;on-error&#8217;.
+If scalable is set to True, this value is ignored and it will behave as if it was set to &#8216;always&#8217;.
+If not specified the user default will be used.</li>
+<li><strong>scalable</strong> (<em>bool</em>) &#8211; [Only apply to applications] True to start a scalable deployment. Default: False</li>
+<li><strong>multiplicity</strong> (<em>bool</em>) &#8211; [Only apply to applications] A dict to specify how many instances to start per node.
+Nodenames as keys and number of instances to start as values.</li>
+<li><strong>tolerate_failures</strong> (<em>dict</em>) &#8211; [Only apply to applications] A dict to specify how many failures to tolerate per node.
+Nodenames as keys and number of failure to tolerate as values.</li>
+<li><strong>check_ssh_key</strong> (<em>bool</em>) &#8211; Set it to True if you want the SlipStream server to check if you have a public ssh key
+defined in your user profile. Useful if you want to ensure you will have access to VMs.</li>
+<li><strong>raw_params</strong> (<em>dict</em>) &#8211; This allows you to pass parameters directly in the request to the SlipStream server.
+Keys must be formatted in the format understood by the SlipStream server.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The deployment UUID of the newly created deployment</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">uuid.UUID</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.get_deployment">
+<code class="descname">get_deployment</code><span class="sig-paren">(</span><em>deployment_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_deployment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.get_deployment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a deployment</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>deployment_id</strong> (<em>str or UUID</em>) &#8211; The deployment UUID of the deployment to get</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.get_element">
+<code class="descname">get_element</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.get_element" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get details about a project, a component or an application</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>str</em>) &#8211; The path of an element (project/component/application)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.list_applications">
+<code class="descname">list_applications</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_applications"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_applications" title="Permalink to this definition">¶</a></dt>
+<dd><p>List apps in the appstore</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.list_deployments">
+<code class="descname">list_deployments</code><span class="sig-paren">(</span><em>inactive=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_deployments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_deployments" title="Permalink to this definition">¶</a></dt>
+<dd><p>List deployments</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inactive</strong> &#8211; Include inactive deployments. Default to False</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.list_project_content">
+<code class="descname">list_project_content</code><span class="sig-paren">(</span><em>path=None</em>, <em>recurse=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_project_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_project_content" title="Permalink to this definition">¶</a></dt>
+<dd><p>List the content of a project</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>str</em>) &#8211; The path of a project. If None, list the root project.</li>
+<li><strong>recurse</strong> (<em>bool</em>) &#8211; Get project content recursively</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.list_virtualmachines">
+<code class="descname">list_virtualmachines</code><span class="sig-paren">(</span><em>deployment_id=None</em>, <em>offset=0</em>, <em>limit=20</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_virtualmachines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_virtualmachines" title="Permalink to this definition">¶</a></dt>
+<dd><p>List virtual machines</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>deployment_id</strong> (<em>str or UUID</em>) &#8211; Retrieve only virtual machines about the specified run_id. Default to None</li>
+<li><strong>offset</strong> &#8211; Retrieve virtual machines starting by the offset&lt;exp&gt;th&lt;/exp&gt; one. Default to 0</li>
+<li><strong>limit</strong> &#8211; Retrieve at most &#8216;limit&#8217; virtual machines. Default to 20</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.login">
+<code class="descname">login</code><span class="sig-paren">(</span><em>username</em>, <em>password</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.login"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.login" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>username</strong> &#8211; </li>
+<li><strong>password</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.logout">
+<code class="descname">logout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.logout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.logout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.publish">
+<code class="descname">publish</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.publish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.publish" title="Permalink to this definition">¶</a></dt>
+<dd><p>Publish a component or an application to the appstore</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> &#8211; The path to a component or an application</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.terminate">
+<code class="descname">terminate</code><span class="sig-paren">(</span><em>deployment_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.terminate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.terminate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminate a deployment</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>deployment_id</strong> (<em>str or uuid.UUID</em>) &#8211; The UUID of the deployment to terminate</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.unpublish">
+<code class="descname">unpublish</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.unpublish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.unpublish" title="Permalink to this definition">¶</a></dt>
+<dd><p>Unpublish a component or an application from the appstore</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> &#8211; The path to a component or an application</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.Api.usage">
+<code class="descname">usage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.usage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.usage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get current usage and quota by cloud service.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, SixSq.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
