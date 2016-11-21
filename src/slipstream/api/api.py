@@ -132,7 +132,10 @@ class Api(object):
                                     headers={'Accept': 'application/xml'},
                                     params=params)
         response.raise_for_status()
-        return etree.fromstring(response.text)
+
+        parser = etree.DefusedXMLParser(encoding='utf-8')
+        parser.feed(response.text.encode('utf-8'))
+        return parser.close()
 
     def _xml_put(self, url, data):
         return self.session.put('%s%s' % (self.endpoint, url),

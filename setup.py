@@ -36,6 +36,8 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     classifiers=[
+        'Development Status :: 3 - Alpha',
+        'License :: OSI Approved :: Apache Software License',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'Operating System :: OS Independent',
