@@ -23,6 +23,7 @@ Python wrapper of the SlipStream API
   ```
   
 ## Documentation
+### Simple docstring based documentation
 You can get the full documentation by typing:
 _Python shell/code_
 ```python
@@ -58,4 +59,13 @@ To run a local webserver with the documentation you can run:
 pydoc -p 8080 slipstream.api.Api
 ```
 and then [http://localhost/slipstream.api.api.html#Api](http://localhost/slipstream.api.api.html#Api)
+
+### Sphinx documentation
+There is a Sphinx documentation available at http://slipstream.github.io/SlipStreamPythonAPI
+
+#### Generate and publish the Sphinx documentation to GitHub Pages
+You can use the provided makefile (in the `doc` directory or in the root directory):
+```shell
+make gh-pages
+```
 
