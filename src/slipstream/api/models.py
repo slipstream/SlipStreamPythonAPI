@@ -53,3 +53,18 @@ Module = collections.namedtuple('Module', [
     'path',
 ])
 
+User = collections.namedtuple('User', [
+    'name',
+    'cyclone_login',
+    'email',
+    'first_name',
+    'last_name',
+    'organization',
+    'configured_clouds',
+    'default_cloud',
+    'ssh_public_key',
+    'keep_running',
+    'timeout',
+    'issuper',
+])
+
