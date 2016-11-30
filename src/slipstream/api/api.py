@@ -442,14 +442,19 @@ class Api(object):
 
         """
         root = self._xml_get('/run/' + str(deployment_id))
+        abort=None
+        for entry in root.find("runtimeParameters"):
+            p = entry.find("runtimeParameter")
+            if p.text is not None and p.get("key") == "ss:abort":
+                abort=p.text.strip()
         return models.Deployment(id=uuid.UUID(root.get('uuid')),
                                  module=_mod(root.get('moduleResourceUri')),
                                  status=root.get('state').lower(),
                                  started_at=root.get('startTime'),
                                  last_state_change=root.get('lastStateChangeTime'),
                                  cloud=root.get('cloudServiceNames'),
-                                 username=root.get('username'),
-                                 abort=root.get('abort'),
+                                 username=root.get('user'),
+                                 abort=abort,
                                  )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
