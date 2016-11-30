@@ -361,7 +361,7 @@ class Api(object):
                                    name=node.get('name'),
                                    cloud=node.get('cloudService'),
                                    multiplicity=node.get('multiplicity'),
-                                   maxProvisioningFailures=node.get('maxProvisioningFailures')
+                                   max_provisioning_failures=node.get('maxProvisioningFailures')
                                    )
 
 
