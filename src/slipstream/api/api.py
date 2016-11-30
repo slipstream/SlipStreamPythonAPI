@@ -299,10 +299,8 @@ class Api(object):
     def get_deployment_components(self, path):
         """
         Get components used in an an application
-
         :param path: The path of an element (application)
         :type path: str
-
         """
         url = _mod_url(path)
         try:
