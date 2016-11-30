@@ -253,6 +253,52 @@ class Api(object):
 
         return True
 
+    def get_user_informations(self, username):
+        """
+        Get informations for a given user, if permitted
+        :param username: The username of the user
+        :type path: str
+        """
+        try:
+            root = self._xml_get('/user/%s' % username)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for user: {0}.")
+            raise
+        default_cloud = ""
+        ssh_public_key = ""
+        keep_running = ""
+        timeout = ""
+        configured_clouds = []
+        for n in root.find("parameters"):
+            parameter = n.find("parameter")
+            if parameter.get('name') == "General.default.cloud.service":
+                default_cloud = parameter.find("value").text
+            elif parameter.get('name') == "General.ssh.public.key":
+                ssh_public_key = parameter.find("value").text
+            elif parameter.get('name') == "General.keep-running":
+                keep_running = parameter.find("value").text
+            elif parameter.get('name') == "General.Timeout":
+                timeout = parameter.find("value").text
+            elif parameter.get('name').endswith(".username"):
+                value = parameter.find("value").text
+                if value is not None and value.strip() != "":
+                    configured_clouds.append(parameter.get('category'))
+        user = models.User(
+            name=root.get('name'),
+            cyclone_login=root.get('cycloneLogin'),
+            email=root.get('email'),
+            first_name=root.get('firstName'),
+            last_name=root.get('lastName'),
+            organization=root.get('organization'),
+            configured_clouds=configured_clouds,
+            default_cloud=default_cloud,
+            ssh_public_key=ssh_public_key,
+            keep_running=keep_running,
+            timeout=timeout,
+        )
+        return user
+
 
     def list_applications(self):
         """
