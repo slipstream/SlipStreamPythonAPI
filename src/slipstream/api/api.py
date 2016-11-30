@@ -356,7 +356,10 @@ class Api(object):
                                     status=elem.get('status').lower(),
                                     started_at=elem.get('startTime'),
                                     last_state_change=elem.get('lastStateChangeTime'),
-                                    cloud=elem.get('cloudServiceNames'))
+                                    cloud=elem.get('cloudServiceNames'),
+                                    username=elem.get('username'),
+                                    abort=elem.get('abort'),
+                                    )
 
     def get_deployment(self, deployment_id):
         """
@@ -372,7 +375,10 @@ class Api(object):
                                  status=root.get('state').lower(),
                                  started_at=root.get('startTime'),
                                  last_state_change=root.get('lastStateChangeTime'),
-                                 cloud=root.get('cloudServiceNames'))
+                                 cloud=root.get('cloudServiceNames'),
+                                 username=root.get('username'),
+                                 abort=root.get('abort'),
+                                 )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
         """
