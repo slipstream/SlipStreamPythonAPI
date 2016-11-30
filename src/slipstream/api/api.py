@@ -448,7 +448,7 @@ class Api(object):
         :type scalable: bool
         :param multiplicity: [Only apply to applications] A dict to specify how many instances to start per node.
                              Nodenames as keys and number of instances to start as values.
-        :type multiplicity: bool
+        :type multiplicity: dict
         :param tolerate_failures: [Only apply to applications] A dict to specify how many failures to tolerate per node.
                                   Nodenames as keys and number of failure to tolerate as values.
         :type tolerate_failures: dict
