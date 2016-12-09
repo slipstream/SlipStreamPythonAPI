@@ -53,3 +53,9 @@ Module = collections.namedtuple('Module', [
     'path',
 ])
 
+Size = collections.namedtuple('Size', [
+    'cpu',
+    'ram',
+    'disk',
+])
+

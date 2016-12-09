@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 
 import os
+import re
 import six
 import stat
 import uuid
+import json
+import types
 import logging
 
 import requests
@@ -147,6 +150,14 @@ class Api(object):
         response = self.session.get('%s%s' % (self.endpoint, url),
                                     headers={'Accept': 'application/json'},
                                     params=params)
+        response.raise_for_status()
+        return response.json()
+
+    def _json_put(self, url, data):
+        response = self.session.put('%s%s' % (self.endpoint, url),
+                                    headers={'Accept': 'application/json',
+                                             'Content-Type': 'application/json'},
+                                    data=data)
         response.raise_for_status()
         return response.json()
 
@@ -294,6 +305,60 @@ class Api(object):
                                                    root.get('shortName'))))
         return module
 
+    def find_service_offers(self, path, size=None, clouds=None):
+        """
+        Try to find a service offer for the specified component/application.
+
+        :param path: The path of the component/application
+        :type path: str
+        :param cloud: A list or a dict of list to specify on which Cloud(s) to search for service offers.
+                      If path is a component simply specify Clouds in a list (of strings).
+                      If path is a deployment specify a dict with the nodenames as keys and a list of Clouds as values.
+                      If not specified the user configured clouds will be used.
+        :type cloud: list or dict
+        :param size: A Size object or a dict of Size objects.
+                     If path is a component simply specify a Size object.
+                     If path is a deployment specify a dict with the nodenames as keys and Size objects as values.
+                     If not specified the component(s) default will be used.
+        :type size: models.Size or dict
+
+        :return A dict with nodenames as keys and a list of matching service offers with their prices if available.
+        """
+
+        def get_component_name(component):
+            name = component.get('node')
+            if not name:
+                module_uri = component.get('module')
+                try:
+                    name = re.findall('([^/]+)(?:/[0-9]*)?$', module_uri)[0]
+                except:
+                    raise SlipStreamError("Failed to find node/component's name for '{}'".format(module_uri))
+            return name
+
+        def get_sort_key(x):
+            price = x.get('price')
+            return (price is None, price)
+
+        def get_sort_offers(component):
+            offers = component.get('connectors', [])
+            return sorted(offers, key=get_sort_key)
+
+        module_uri = _mod_url(path).strip('/')
+
+        data = {
+            'moduleUri': module_uri
+        }
+
+        if clouds and (isinstance(clouds, types.ListType) or
+                       isinstance(clouds, types.TupleType)):
+            data['userConnectors'] = clouds
+
+        placement = self._json_put('/ui/placement', json.dumps(data))
+        components = placement.get('components')
+
+        return {get_component_name(c): get_sort_offers(c) for c in components}
+        
+
     def list_project_content(self, path=None, recurse=False):
         """
         List the content of a project
@@ -430,7 +495,7 @@ class Api(object):
         :type path: str
         :param cloud: A string or a dict to specify on which Cloud(s) to deploy the component/application.
                       To deploy a component simply specify the Cloud name as a string.
-                      To deploy a deployment specify a dict with the nodenames as keys and Cloud names as values.
+                      To deploy a deployment specify a dict with the nodenames as keys and Cloud name as values.
                       If not specified the user default cloud will be used.
         :type cloud: str or dict
         :param parameters: A dict of parameters to redefine for this deployment.
