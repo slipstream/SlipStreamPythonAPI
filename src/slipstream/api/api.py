@@ -296,7 +296,7 @@ class Api(object):
             ssh_public_key=ssh_public_key,
             keep_running=keep_running,
             timeout=timeout,
-            issuper=root.get('issuper'),
+            privileged=root.get('issuper'),
         )
         return user
 
