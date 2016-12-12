@@ -65,6 +65,6 @@ User = collections.namedtuple('User', [
     'ssh_public_key',
     'keep_running',
     'timeout',
-    'issuper',
+    'privileged',
 ])
 
