@@ -432,6 +432,7 @@ class Api(object):
                                     cloud=elem.get('cloudServiceNames'),
                                     username=elem.get('username'),
                                     abort=elem.get('abort'),
+                                    service=elem.get('serviceUrl'),
                                     )
 
     def get_deployment(self, deployment_id):
@@ -444,10 +445,13 @@ class Api(object):
         """
         root = self._xml_get('/run/' + str(deployment_id))
         abort=None
+        service=None
         for entry in root.find("runtimeParameters"):
             p = entry.find("runtimeParameter")
             if p.text is not None and p.get("key") == "ss:abort":
                 abort=p.text.strip()
+            if p.text is not None and p.get("key") == "ss:url.service":
+                service=p.text.strip()
         return models.Deployment(id=uuid.UUID(root.get('uuid')),
                                  module=_mod(root.get('moduleResourceUri')),
                                  status=root.get('state').lower(),
@@ -456,6 +460,7 @@ class Api(object):
                                  cloud=root.get('cloudServiceNames'),
                                  username=root.get('user'),
                                  abort=abort,
+                                 service=service,
                                  )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):

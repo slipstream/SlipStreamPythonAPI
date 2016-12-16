@@ -18,6 +18,7 @@ Deployment = collections.namedtuple('Deployment', [
     'cloud',
     'username',
     'abort',
+    'service',
 ])
 
 Component = collections.namedtuple('Component', [
