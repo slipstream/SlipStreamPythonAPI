@@ -127,6 +127,9 @@ class Api(object):
         url = urlparse(self.endpoint)
         self.session.clear(url.netloc)
 
+    def exposed_xml_get(self, url, **params):
+        return self._xml_get(url, **params)
+
     def _xml_get(self, url, **params):
         response = self.session.get('%s%s' % (self.endpoint, url),
                                     headers={'Accept': 'application/xml'},
