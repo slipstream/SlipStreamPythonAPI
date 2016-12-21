@@ -362,7 +362,12 @@ class Api(object):
                                    name=node.get('name'),
                                    cloud=node.get('cloudService'),
                                    multiplicity=node.get('multiplicity'),
-                                   max_provisioning_failures=node.get('maxProvisioningFailures')
+                                   max_provisioning_failures=node.get('maxProvisioningFailures'),
+                                   network=node.get('network'),
+                                   cpu=node.get('cpu'),
+                                   ram=node.get('ram'),
+                                   disk=node.get('disk'),
+                                   extra_disk_volatile=node.get('extraDiskVolatile'),
                                    )
 
 
