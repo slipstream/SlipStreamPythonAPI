@@ -24,6 +24,11 @@ Component = collections.namedtuple('Component', [
     'cloud',
     'multiplicity',
     'max_provisioning_failures',
+    'network',
+    'cpu',
+    'ram',
+    'disk',
+    'extra_disk_volatile',
 ])
 
 VirtualMachine = collections.namedtuple('VirtualMachine', [
