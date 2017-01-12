@@ -380,7 +380,7 @@ class Api(object):
                                  status=root.get('state').lower(),
                                  started_at=root.get('startTime'),
                                  last_state_change=root.get('lastStateChangeTime'),
-                                 cloud=root.get('cloudServiceNames'),
+                                 clouds=root.get('cloudServiceNames','').split(','),
                                  username=root.get('user'),
                                  abort=abort,
                                  service=service,

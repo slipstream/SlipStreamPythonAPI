@@ -15,7 +15,7 @@ Deployment = collections.namedtuple('Deployment', [
     'status',
     'started_at',
     'last_state_change',
-    'cloud',
+    'clouds',
     'username',
     'abort',
     'service',
