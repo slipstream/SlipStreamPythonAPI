@@ -18,7 +18,7 @@ Deployment = collections.namedtuple('Deployment', [
     'clouds',
     'username',
     'abort',
-    'service',
+    'service_url',
 ])
 
 VirtualMachine = collections.namedtuple('VirtualMachine', [
