@@ -301,8 +301,7 @@ class Api(object):
             if e.response.status_code == 403:
                 logger.debug("Access denied for path: {0}. Skipping.".format(path))
             raise
-        for n in root.find("nodes"):
-            node = n.find("node")
+        for node in root.findall("nodes/entry/node"):
             yield models.Component(path=_mod(node.get("imageUri")),
                                    name=node.get('name'),
                                    cloud=node.get('cloudService'),
