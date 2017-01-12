@@ -371,14 +371,10 @@ class Api(object):
 
         """
         root = self._xml_get('/run/' + str(deployment_id))
-        abort=None
-        service=None
-        for entry in root.find("runtimeParameters"):
-            p = entry.find("runtimeParameter")
-            if p.text is not None and p.get("key") == "ss:abort":
-                abort=p.text.strip()
-            if p.text is not None and p.get("key") == "ss:url.service":
-                service=p.text.strip()
+
+        abort = root.findtext('runtimeParameters/entry/runtimeParameter[@key="ss:abort"]')
+        service = root.findtext('runtimeParameters/entry/runtimeParameter[@key="ss:url.service"]')
+
         return models.Deployment(id=uuid.UUID(root.get('uuid')),
                                  module=_mod(root.get('moduleResourceUri')),
                                  status=root.get('state').lower(),
