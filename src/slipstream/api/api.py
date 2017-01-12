@@ -294,6 +294,36 @@ class Api(object):
                                                    root.get('shortName'))))
         return module
 
+
+
+    def get_deployment_components(self, path):
+        """
+        Get components used in an an application
+        :param path: The path of an element (application)
+        :type path: str
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+        for n in root.find("nodes"):
+            node = n.find("node")
+            yield models.Component(path=_mod(node.get("imageUri")),
+                                   name=node.get('name'),
+                                   cloud=node.get('cloudService'),
+                                   multiplicity=node.get('multiplicity'),
+                                   max_provisioning_failures=node.get('maxProvisioningFailures'),
+                                   network=node.get('network'),
+                                   cpu=node.get('cpu'),
+                                   ram=node.get('ram'),
+                                   disk=node.get('disk'),
+                                   extra_disk_volatile=node.get('extraDiskVolatile'),
+                                   )
+
+
     def list_project_content(self, path=None, recurse=False):
         """
         List the content of a project
