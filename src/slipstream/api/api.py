@@ -181,18 +181,18 @@ class Api(object):
         :param last_name: The user's last name
         :type last_name: str
         :param organization: The user's organization/company
-        :type organization: str
+        :type organization: str|None
         :param roles: The user's roles
         :type roles: list
         :param privileged: true to create a privileged user, false otherwise
         :type privileged: bool
         :param default_cloud: The user's default Cloud
-        :type default_cloud: str
+        :type default_cloud: str|None
         :param default_keep_running: The user's default setting for keep-running.
         :type default_keep_running: 'always' or 'never' or 'on-success' or 'on-error'
         :param ssh_public_keys: The SSH public keys to inject into deployed instances.
                                 One key per line.
-        :type ssh_public_keys: str
+        :type ssh_public_keys: str|None
         :param log_verbosity: The verbosity level of the logging inside instances.
                               0: Actions, 1: Steps, 2: Details, 3: Debugging
         :type log_verbosity: 0 or 1 or 2 or 3
@@ -205,7 +205,7 @@ class Api(object):
         :type usage_email: 'never' or 'daily'
         :param cloud_parameters: To add Cloud specific parameters (like credentials).
                                  A dict with the cloud name as the key and a dict of parameter as the value.
-        :type cloud_parameters: dict
+        :type cloud_parameters: dict|None
 
         """
         attrib = dict(name=username, password=password, email=email,
@@ -448,7 +448,7 @@ class Api(object):
         :type scalable: bool
         :param multiplicity: [Only apply to applications] A dict to specify how many instances to start per node.
                              Nodenames as keys and number of instances to start as values.
-        :type multiplicity: bool
+        :type multiplicity: dict
         :param tolerate_failures: [Only apply to applications] A dict to specify how many failures to tolerate per node.
                                   Nodenames as keys and number of failure to tolerate as values.
         :type tolerate_failures: dict
