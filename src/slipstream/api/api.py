@@ -288,10 +288,10 @@ class Api(object):
                                                    root.get('shortName'))))
         return module
 
-    def get_deployment_components(self, path):
+    def get_application_nodes(self, path):
         """
-        Get components used in an an application
-        :param path: The path of an element (application)
+        Get nodes of an application
+        :param path: The path of an application
         :type path: str
         """
         url = _mod_url(path)
@@ -302,17 +302,17 @@ class Api(object):
                 logger.debug("Access denied for path: {0}. Skipping.".format(path))
             raise
         for node in root.findall("nodes/entry/node"):
-            yield models.Component(path=_mod(node.get("imageUri")),
-                                   name=node.get('name'),
-                                   cloud=node.get('cloudService'),
-                                   multiplicity=node.get('multiplicity'),
-                                   max_provisioning_failures=node.get('maxProvisioningFailures'),
-                                   network=node.get('network'),
-                                   cpu=node.get('cpu'),
-                                   ram=node.get('ram'),
-                                   disk=node.get('disk'),
-                                   extra_disk_volatile=node.get('extraDiskVolatile'),
-                                   )
+            yield models.Node(path=_mod(node.get("imageUri")),
+                              name=node.get('name'),
+                              cloud=node.get('cloudService'),
+                              multiplicity=node.get('multiplicity'),
+                              max_provisioning_failures=node.get('maxProvisioningFailures'),
+                              network=node.get('network'),
+                              cpu=node.get('cpu'),
+                              ram=node.get('ram'),
+                              disk=node.get('disk'),
+                              extra_disk_volatile=node.get('extraDiskVolatile'),
+                              )
 
     def list_project_content(self, path=None, recurse=False):
         """

@@ -21,7 +21,7 @@ Deployment = collections.namedtuple('Deployment', [
     'service_url',
 ])
 
-Component = collections.namedtuple('Component', [
+Node = collections.namedtuple('Node', [
     'path',
     'name',
     'cloud',
