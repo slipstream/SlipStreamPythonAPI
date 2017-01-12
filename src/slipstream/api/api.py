@@ -294,6 +294,34 @@ class Api(object):
                                                    root.get('shortName'))))
         return module
 
+
+
+    def get_deployment_components(self, path):
+        """
+        Get components used in an an application
+
+        :param path: The path of an element (application)
+        :type path: str
+
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+        for n in root.find("nodes"):
+            node = n.find("node")
+            yield models.Component(path=_mod(node.get("imageUri")),
+                                   name=node.get('name'),
+                                   cloud=node.get('cloudService'),
+                                   multiplicity=node.get('multiplicity'),
+                                   maxProvisioningFailures=node.get('maxProvisioningFailures')
+                                   )
+
+
+
     def list_project_content(self, path=None, recurse=False):
         """
         List the content of a project
@@ -356,7 +384,10 @@ class Api(object):
                                     status=elem.get('status').lower(),
                                     started_at=elem.get('startTime'),
                                     last_state_change=elem.get('lastStateChangeTime'),
-                                    cloud=elem.get('cloudServiceNames'))
+                                    cloud=elem.get('cloudServiceNames'),
+                                    username=elem.get('username'),
+                                    abort=elem.get('abort'),
+                                    )
 
     def get_deployment(self, deployment_id):
         """
@@ -372,7 +403,10 @@ class Api(object):
                                  status=root.get('state').lower(),
                                  started_at=root.get('startTime'),
                                  last_state_change=root.get('lastStateChangeTime'),
-                                 cloud=root.get('cloudServiceNames'))
+                                 cloud=root.get('cloudServiceNames'),
+                                 username=root.get('username'),
+                                 abort=root.get('abort'),
+                                 )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
         """
