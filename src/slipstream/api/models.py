@@ -18,6 +18,19 @@ Deployment = collections.namedtuple('Deployment', [
     'cloud',
 ])
 
+Component = collections.namedtuple('Component', [
+    'path',
+    'name',
+    'cloud',
+    'multiplicity',
+    'max_provisioning_failures',
+    'network',
+    'cpu',
+    'ram',
+    'disk',
+    'extra_disk_volatile',
+])
+
 VirtualMachine = collections.namedtuple('VirtualMachine', [
     'id',
     'cloud',

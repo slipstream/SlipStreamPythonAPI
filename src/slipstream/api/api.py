@@ -150,17 +150,14 @@ class Api(object):
         response.raise_for_status()
         return response.json()
 
-
     @staticmethod
     def _add_to_dict_if_not_none(d, key, value):
         if key is not None and value is not None:
             d[key] = value
 
-
     @staticmethod
     def _dict_values_to_string(d):
         return {k: v if isinstance(v, six.string_types) else str(v) for k,v in six.iteritems(d)}
-
 
     def create_user(self, username, password, email, first_name, last_name,
                     organization=None, roles='', privileged=False,
@@ -253,7 +250,6 @@ class Api(object):
 
         return True
 
-
     def list_applications(self):
         """
         List apps in the appstore
@@ -265,8 +261,6 @@ class Api(object):
                              version=int(elem.get('version')),
                              path=_mod(elem.get('resourceUri'),
                                       with_version=False))
-
-
 
     def get_element(self, path):
         """
@@ -293,6 +287,32 @@ class Api(object):
                                path=_mod('%s/%s' % (root.get('parentUri').strip('/'),
                                                    root.get('shortName'))))
         return module
+
+    def get_deployment_components(self, path):
+        """
+        Get components used in an an application
+        :param path: The path of an element (application)
+        :type path: str
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+        for node in root.findall("nodes/entry/node"):
+            yield models.Component(path=_mod(node.get("imageUri")),
+                                   name=node.get('name'),
+                                   cloud=node.get('cloudService'),
+                                   multiplicity=node.get('multiplicity'),
+                                   max_provisioning_failures=node.get('maxProvisioningFailures'),
+                                   network=node.get('network'),
+                                   cpu=node.get('cpu'),
+                                   ram=node.get('ram'),
+                                   disk=node.get('disk'),
+                                   extra_disk_volatile=node.get('extraDiskVolatile'),
+                                   )
 
     def list_project_content(self, path=None, recurse=False):
         """
