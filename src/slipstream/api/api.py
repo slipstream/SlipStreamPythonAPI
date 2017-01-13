@@ -153,17 +153,14 @@ class Api(object):
         response.raise_for_status()
         return response.json()
 
-
     @staticmethod
     def _add_to_dict_if_not_none(d, key, value):
         if key is not None and value is not None:
             d[key] = value
 
-
     @staticmethod
     def _dict_values_to_string(d):
         return {k: v if isinstance(v, six.string_types) else str(v) for k,v in six.iteritems(d)}
-
 
     def create_user(self, username, password, email, first_name, last_name,
                     organization=None, roles='', privileged=False,
@@ -184,18 +181,18 @@ class Api(object):
         :param last_name: The user's last name
         :type last_name: str
         :param organization: The user's organization/company
-        :type organization: str
+        :type organization: str|None
         :param roles: The user's roles
         :type roles: list
         :param privileged: true to create a privileged user, false otherwise
         :type privileged: bool
         :param default_cloud: The user's default Cloud
-        :type default_cloud: str
+        :type default_cloud: str|None
         :param default_keep_running: The user's default setting for keep-running.
         :type default_keep_running: 'always' or 'never' or 'on-success' or 'on-error'
         :param ssh_public_keys: The SSH public keys to inject into deployed instances.
                                 One key per line.
-        :type ssh_public_keys: str
+        :type ssh_public_keys: str|None
         :param log_verbosity: The verbosity level of the logging inside instances.
                               0: Actions, 1: Steps, 2: Details, 3: Debugging
         :type log_verbosity: 0 or 1 or 2 or 3
@@ -208,7 +205,7 @@ class Api(object):
         :type usage_email: 'never' or 'daily'
         :param cloud_parameters: To add Cloud specific parameters (like credentials).
                                  A dict with the cloud name as the key and a dict of parameter as the value.
-        :type cloud_parameters: dict
+        :type cloud_parameters: dict|None
 
         """
         attrib = dict(name=username, password=password, email=email,
@@ -307,7 +304,6 @@ class Api(object):
         )
         return user
 
-
     def list_applications(self):
         """
         List apps in the appstore
@@ -319,8 +315,6 @@ class Api(object):
                              version=int(elem.get('version')),
                              path=_mod(elem.get('resourceUri'),
                                       with_version=False))
-
-
 
     def get_element(self, path):
         """
@@ -347,6 +341,32 @@ class Api(object):
                                path=_mod('%s/%s' % (root.get('parentUri').strip('/'),
                                                    root.get('shortName'))))
         return module
+
+    def get_application_nodes(self, path):
+        """
+        Get nodes of an application
+        :param path: The path of an application
+        :type path: str
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+        for node in root.findall("nodes/entry/node"):
+            yield models.Node(path=_mod(node.get("imageUri")),
+                              name=node.get('name'),
+                              cloud=node.get('cloudService'),
+                              multiplicity=node.get('multiplicity'),
+                              max_provisioning_failures=node.get('maxProvisioningFailures'),
+                              network=node.get('network'),
+                              cpu=node.get('cpu'),
+                              ram=node.get('ram'),
+                              disk=node.get('disk'),
+                              extra_disk_volatile=node.get('extraDiskVolatile'),
+                              )
 
     def list_project_content(self, path=None, recurse=False):
         """
@@ -410,7 +430,11 @@ class Api(object):
                                     status=elem.get('status').lower(),
                                     started_at=elem.get('startTime'),
                                     last_state_change=elem.get('lastStateChangeTime'),
-                                    cloud=elem.get('cloudServiceNames'))
+                                    cloud=elem.get('cloudServiceNames'),
+                                    username=elem.get('username'),
+                                    abort=elem.get('abort'),
+                                    service_url=elem.get('serviceUrl'),
+                                    )
 
     def get_deployment(self, deployment_id):
         """
@@ -421,12 +445,20 @@ class Api(object):
 
         """
         root = self._xml_get('/run/' + str(deployment_id))
+
+        abort = root.findtext('runtimeParameters/entry/runtimeParameter[@key="ss:abort"]')
+        service_url = root.findtext('runtimeParameters/entry/runtimeParameter[@key="ss:url.service"]')
+
         return models.Deployment(id=uuid.UUID(root.get('uuid')),
                                  module=_mod(root.get('moduleResourceUri')),
                                  status=root.get('state').lower(),
                                  started_at=root.get('startTime'),
                                  last_state_change=root.get('lastStateChangeTime'),
-                                 cloud=root.get('cloudServiceNames'))
+                                 clouds=root.get('cloudServiceNames','').split(','),
+                                 username=root.get('user'),
+                                 abort=abort,
+                                 service_url=service_url,
+                                 )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
         """
@@ -502,7 +534,7 @@ class Api(object):
         :type scalable: bool
         :param multiplicity: [Only apply to applications] A dict to specify how many instances to start per node.
                              Nodenames as keys and number of instances to start as values.
-        :type multiplicity: bool
+        :type multiplicity: dict
         :param tolerate_failures: [Only apply to applications] A dict to specify how many failures to tolerate per node.
                                   Nodenames as keys and number of failure to tolerate as values.
         :type tolerate_failures: dict

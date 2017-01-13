@@ -15,7 +15,23 @@ Deployment = collections.namedtuple('Deployment', [
     'status',
     'started_at',
     'last_state_change',
+    'clouds',
+    'username',
+    'abort',
+    'service_url',
+])
+
+Node = collections.namedtuple('Node', [
+    'path',
+    'name',
     'cloud',
+    'multiplicity',
+    'max_provisioning_failures',
+    'network',
+    'cpu',
+    'ram',
+    'disk',
+    'extra_disk_volatile',
 ])
 
 VirtualMachine = collections.namedtuple('VirtualMachine', [
