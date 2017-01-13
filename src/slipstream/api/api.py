@@ -106,6 +106,7 @@ class Api(object):
         if insecure:
             requests.packages.urllib3.disable_warnings(
                 requests.packages.urllib3.exceptions.InsecureRequestWarning)
+        self.username = None
 
     def login(self, username, password):
         """
@@ -114,6 +115,8 @@ class Api(object):
         :param password: 
 
         """
+        self.username = username
+
         response = self.session.post('%s/auth/login' % self.endpoint, data={
             'username': username,
             'password': password
@@ -249,6 +252,57 @@ class Api(object):
         response.raise_for_status()
 
         return True
+
+    def get_user(self, username=None):
+        """
+        Get informations for a given user, if permitted
+        :param username: The username of the user.
+                         Default to the user logged in if not provided or None.
+        :type path: str|None
+        """
+        if not username:
+            username = self.username
+
+        try:
+            root = self._xml_get('/user/%s' % username)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for user: {0}.")
+            raise
+
+        general_params = {}
+        with_username = set()
+        with_password = set()
+
+        for p in root.findall('parameters/entry/parameter'):
+            name = p.get('name', '')
+            value = p.findtext('value', '')
+            category = p.get('category', '')
+
+            if (name.endswith('.username') or name.endswith('.access.id')) and value:
+                with_username.add(category)
+            elif (name.endswith('.password') or name.endswith('.secret.key')) and value:
+                with_password.add(category)
+            elif category == 'General':
+                general_params[name] = value
+
+        configured_clouds = with_username & with_password
+
+        user = models.User(
+            username=root.get('name'),
+            cyclone_login=root.get('cycloneLogin'),
+            email=root.get('email'),
+            first_name=root.get('firstName'),
+            last_name=root.get('lastName'),
+            organization=root.get('organization'),
+            configured_clouds=configured_clouds,
+            default_cloud=general_params.get('General.default.cloud.service'),
+            ssh_public_keys=general_params.get('General.ssh.public.key', '').splitlines(),
+            keep_running=general_params.get('General.keep-running'),
+            timeout=general_params.get('General.Timeout'),
+            privileged=root.get('issuper').lower() == "true",
+        )
+        return user
 
     def list_applications(self):
         """
