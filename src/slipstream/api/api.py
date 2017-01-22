@@ -163,7 +163,7 @@ class Api(object):
         return {k: v if isinstance(v, six.string_types) else str(v) for k,v in six.iteritems(d)}
 
     def create_user(self, username, password, email, first_name, last_name,
-                    organization=None, roles='', privileged=False,
+                    organization=None, roles=None, privileged=False,
                     default_cloud=None, default_keep_running='never',
                     ssh_public_keys=None, log_verbosity=1, execution_timeout=30,
                     usage_email='never', cloud_parameters=None):
@@ -210,8 +210,10 @@ class Api(object):
         """
         attrib = dict(name=username, password=password, email=email,
                       firstName=first_name, lastName=last_name,
-                      organization=organization, roles=roles, issuper=privileged,
+                      issuper=privileged,
                       state='ACTIVE', resourceUri='user/{}'.format(username))
+        self._add_to_dict_if_not_none(attrib, 'organization', organization)
+        self._add_to_dict_if_not_none(attrib, 'roles', roles)
         _attrib = self._dict_values_to_string(attrib)
 
         parameters = {}
