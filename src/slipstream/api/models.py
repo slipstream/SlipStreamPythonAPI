@@ -15,13 +15,13 @@ Deployment = collections.namedtuple('Deployment', [
     'status',
     'started_at',
     'last_state_change',
-    'cloud',
+    'clouds',
     'username',
     'abort',
-    'service',
+    'service_url',
 ])
 
-Component = collections.namedtuple('Component', [
+Node = collections.namedtuple('Node', [
     'path',
     'name',
     'cloud',
@@ -70,7 +70,7 @@ Module = collections.namedtuple('Module', [
 ])
 
 User = collections.namedtuple('User', [
-    'name',
+    'username',
     'cyclone_login',
     'email',
     'first_name',
@@ -78,7 +78,7 @@ User = collections.namedtuple('User', [
     'organization',
     'configured_clouds',
     'default_cloud',
-    'ssh_public_key',
+    'ssh_public_keys',
     'keep_running',
     'timeout',
     'privileged',

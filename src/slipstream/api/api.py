@@ -106,6 +106,7 @@ class Api(object):
         if insecure:
             requests.packages.urllib3.disable_warnings(
                 requests.packages.urllib3.exceptions.InsecureRequestWarning)
+        self.username = None
 
     def login(self, username, password):
         """
@@ -114,6 +115,8 @@ class Api(object):
         :param password: 
 
         """
+        self.username = username
+
         response = self.session.post('%s/auth/login' % self.endpoint, data={
             'username': username,
             'password': password
@@ -153,20 +156,17 @@ class Api(object):
         response.raise_for_status()
         return response.json()
 
-
     @staticmethod
     def _add_to_dict_if_not_none(d, key, value):
         if key is not None and value is not None:
             d[key] = value
 
-
     @staticmethod
     def _dict_values_to_string(d):
         return {k: v if isinstance(v, six.string_types) else str(v) for k,v in six.iteritems(d)}
 
-
     def create_user(self, username, password, email, first_name, last_name,
-                    organization=None, roles='', privileged=False,
+                    organization=None, roles=None, privileged=False,
                     default_cloud=None, default_keep_running='never',
                     ssh_public_keys=None, log_verbosity=1, execution_timeout=30,
                     usage_email='never', cloud_parameters=None):
@@ -184,18 +184,18 @@ class Api(object):
         :param last_name: The user's last name
         :type last_name: str
         :param organization: The user's organization/company
-        :type organization: str
+        :type organization: str|None
         :param roles: The user's roles
         :type roles: list
         :param privileged: true to create a privileged user, false otherwise
         :type privileged: bool
         :param default_cloud: The user's default Cloud
-        :type default_cloud: str
+        :type default_cloud: str|None
         :param default_keep_running: The user's default setting for keep-running.
         :type default_keep_running: 'always' or 'never' or 'on-success' or 'on-error'
         :param ssh_public_keys: The SSH public keys to inject into deployed instances.
                                 One key per line.
-        :type ssh_public_keys: str
+        :type ssh_public_keys: str|None
         :param log_verbosity: The verbosity level of the logging inside instances.
                               0: Actions, 1: Steps, 2: Details, 3: Debugging
         :type log_verbosity: 0 or 1 or 2 or 3
@@ -208,13 +208,15 @@ class Api(object):
         :type usage_email: 'never' or 'daily'
         :param cloud_parameters: To add Cloud specific parameters (like credentials).
                                  A dict with the cloud name as the key and a dict of parameter as the value.
-        :type cloud_parameters: dict
+        :type cloud_parameters: dict|None
 
         """
         attrib = dict(name=username, password=password, email=email,
                       firstName=first_name, lastName=last_name,
-                      organization=organization, roles=roles, issuper=privileged,
+                      issuper=privileged,
                       state='ACTIVE', resourceUri='user/{}'.format(username))
+        self._add_to_dict_if_not_none(attrib, 'organization', organization)
+        self._add_to_dict_if_not_none(attrib, 'roles', roles)
         _attrib = self._dict_values_to_string(attrib)
 
         parameters = {}
@@ -256,53 +258,56 @@ class Api(object):
 
         return True
 
-    def get_user_informations(self, username):
+    def get_user(self, username=None):
         """
         Get informations for a given user, if permitted
-        :param username: The username of the user
-        :type path: str
+        :param username: The username of the user.
+                         Default to the user logged in if not provided or None.
+        :type path: str|None
         """
+        if not username:
+            username = self.username
+
         try:
             root = self._xml_get('/user/%s' % username)
         except requests.HTTPError as e:
             if e.response.status_code == 403:
                 logger.debug("Access denied for user: {0}.")
             raise
-        default_cloud = ""
-        ssh_public_key = ""
-        keep_running = ""
-        timeout = ""
-        configured_clouds = []
-        for n in root.find("parameters"):
-            parameter = n.find("parameter")
-            if parameter.get('name') == "General.default.cloud.service":
-                default_cloud = parameter.find("value").text
-            elif parameter.get('name') == "General.ssh.public.key":
-                ssh_public_key = parameter.find("value").text
-            elif parameter.get('name') == "General.keep-running":
-                keep_running = parameter.find("value").text
-            elif parameter.get('name') == "General.Timeout":
-                timeout = parameter.find("value").text
-            elif parameter.get('name').endswith(".username"):
-                value = parameter.find("value").text
-                if value is not None and value.strip() != "":
-                    configured_clouds.append(parameter.get('category'))
+
+        general_params = {}
+        with_username = set()
+        with_password = set()
+
+        for p in root.findall('parameters/entry/parameter'):
+            name = p.get('name', '')
+            value = p.findtext('value', '')
+            category = p.get('category', '')
+
+            if (name.endswith('.username') or name.endswith('.access.id')) and value:
+                with_username.add(category)
+            elif (name.endswith('.password') or name.endswith('.secret.key')) and value:
+                with_password.add(category)
+            elif category == 'General':
+                general_params[name] = value
+
+        configured_clouds = with_username & with_password
+
         user = models.User(
-            name=root.get('name'),
+            username=root.get('name'),
             cyclone_login=root.get('cycloneLogin'),
             email=root.get('email'),
             first_name=root.get('firstName'),
             last_name=root.get('lastName'),
             organization=root.get('organization'),
             configured_clouds=configured_clouds,
-            default_cloud=default_cloud,
-            ssh_public_key=ssh_public_key,
-            keep_running=keep_running,
-            timeout=timeout,
+            default_cloud=general_params.get('General.default.cloud.service'),
+            ssh_public_keys=general_params.get('General.ssh.public.key', '').splitlines(),
+            keep_running=general_params.get('General.keep-running'),
+            timeout=general_params.get('General.Timeout'),
             privileged=root.get('issuper').lower() == "true",
         )
         return user
-
 
     def list_applications(self):
         """
@@ -315,8 +320,6 @@ class Api(object):
                              version=int(elem.get('version')),
                              path=_mod(elem.get('resourceUri'),
                                       with_version=False))
-
-
 
     def get_element(self, path):
         """
@@ -344,12 +347,10 @@ class Api(object):
                                                    root.get('shortName'))))
         return module
 
-
-
-    def get_deployment_components(self, path):
+    def get_application_nodes(self, path):
         """
-        Get components used in an an application
-        :param path: The path of an element (application)
+        Get nodes of an application
+        :param path: The path of an application
         :type path: str
         """
         url = _mod_url(path)
@@ -359,20 +360,18 @@ class Api(object):
             if e.response.status_code == 403:
                 logger.debug("Access denied for path: {0}. Skipping.".format(path))
             raise
-        for n in root.find("nodes"):
-            node = n.find("node")
-            yield models.Component(path=_mod(node.get("imageUri")),
-                                   name=node.get('name'),
-                                   cloud=node.get('cloudService'),
-                                   multiplicity=node.get('multiplicity'),
-                                   max_provisioning_failures=node.get('maxProvisioningFailures'),
-                                   network=node.get('network'),
-                                   cpu=node.get('cpu'),
-                                   ram=node.get('ram'),
-                                   disk=node.get('disk'),
-                                   extra_disk_volatile=node.get('extraDiskVolatile'),
-                                   )
-
+        for node in root.findall("nodes/entry/node"):
+            yield models.Node(path=_mod(node.get("imageUri")),
+                              name=node.get('name'),
+                              cloud=node.get('cloudService'),
+                              multiplicity=node.get('multiplicity'),
+                              max_provisioning_failures=node.get('maxProvisioningFailures'),
+                              network=node.get('network'),
+                              cpu=node.get('cpu'),
+                              ram=node.get('ram'),
+                              disk=node.get('disk'),
+                              extra_disk_volatile=node.get('extraDiskVolatile'),
+                              )
 
 
     def list_project_content(self, path=None, recurse=False):
@@ -440,7 +439,7 @@ class Api(object):
                                     clouds=elem.get('cloudServiceNames'),
                                     username=elem.get('username'),
                                     abort=elem.get('abort'),
-                                    service=elem.get('serviceUrl'),
+                                    service_url=elem.get('serviceUrl'),
                                     )
 
     def get_deployment(self, deployment_id):
@@ -452,23 +451,19 @@ class Api(object):
 
         """
         root = self._xml_get('/run/' + str(deployment_id))
-        abort=None
-        service=None
-        for entry in root.find("runtimeParameters"):
-            p = entry.find("runtimeParameter")
-            if p.text is not None and p.get("key") == "ss:abort":
-                abort=p.text.strip()
-            if p.text is not None and p.get("key") == "ss:url.service":
-                service=p.text.strip()
+
+        abort = root.findtext('runtimeParameters/entry/runtimeParameter[@key="ss:abort"]')
+        service_url = root.findtext('runtimeParameters/entry/runtimeParameter[@key="ss:url.service"]')
+
         return models.Deployment(id=uuid.UUID(root.get('uuid')),
                                  module=_mod(root.get('moduleResourceUri')),
                                  status=root.get('state').lower(),
                                  started_at=root.get('startTime'),
                                  last_state_change=root.get('lastStateChangeTime'),
-                                 cloud=root.get('cloudServiceNames'),
+                                 clouds=root.get('cloudServiceNames','').split(','),
                                  username=root.get('user'),
                                  abort=abort,
-                                 service=service,
+                                 service_url=service_url,
                                  )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
