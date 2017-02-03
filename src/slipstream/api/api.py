@@ -437,7 +437,7 @@ class Api(object):
                                     status=elem.get('status').lower(),
                                     started_at=elem.get('startTime'),
                                     last_state_change=elem.get('lastStateChangeTime'),
-                                    cloud=elem.get('cloudServiceNames'),
+                                    clouds=elem.get('cloudServiceNames'),
                                     username=elem.get('username'),
                                     abort=elem.get('abort'),
                                     service=elem.get('serviceUrl'),
