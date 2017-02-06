@@ -40,6 +40,8 @@ VirtualMachine = collections.namedtuple('VirtualMachine', [
     'status',
     'deployment_id',
     'deployment_owner',
+    'node_name',
+    'node_instance_id',
     'ip',
     'cpu',
     'ram',
