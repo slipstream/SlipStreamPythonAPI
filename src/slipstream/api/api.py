@@ -599,6 +599,55 @@ class Api(object):
         response.raise_for_status()
         return True
 
+    def add_node(self, deployment_id, nodename, node_quantity=None):
+        """
+        Add node to a deployment
+
+        :param deployment_id: The deployment UUID of the deployment to get
+        :type deployment_id: str|UUID
+        :param nodename: Nodename that will be added
+        :type nodename: str
+        :param node_quantity: amount of node to add
+        :type node_quantity: int
+
+        :return: the list of the created node instances in the body
+        :rtype: list
+
+        """
+        url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(nodename))
+
+        if node_quantity is not None:
+            response = self.session.post(url, data={"n": node_quantity})
+        else:
+            response = self.session.post(url)
+
+        response.raise_for_status()
+
+        return response.content.split(",")
+
+    def remove_node(self, deployment_id, nodename, ids):
+        """
+        Remove node from a deployment
+
+        :param deployment_id: The deployment UUID of the deployment to get
+        :type deployment_id: str|UUID
+        :param nodename: Nodename that will be removed
+        :type nodename: str
+        :param ids: ids of nodename element to remove, or csv formated list of ids (1,2,4)
+        :type ids: list|str
+
+        :return: True on success
+        :rtype: bool
+
+        """
+        url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(nodename))
+
+        response = self.session.delete(url, data={"ids": ",".join(str(x) for x in ids)})
+
+        response.raise_for_status()
+
+        return response.status_code == 204
+
     def usage(self):
         """
         Get current usage and quota by cloud service.
