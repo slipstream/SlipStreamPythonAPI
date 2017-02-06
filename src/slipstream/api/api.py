@@ -373,7 +373,6 @@ class Api(object):
                               extra_disk_volatile=node.get('extraDiskVolatile'),
                               )
 
-
     def list_project_content(self, path=None, recurse=False):
         """
         List the content of a project
