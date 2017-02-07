@@ -439,6 +439,7 @@ class Api(object):
                                     username=elem.get('username'),
                                     abort=elem.get('abort'),
                                     service_url=elem.get('serviceUrl'),
+                                    scalable=elem.get('mutable'),
                                     )
 
     def get_deployment(self, deployment_id):
@@ -463,6 +464,7 @@ class Api(object):
                                  username=root.get('user'),
                                  abort=abort,
                                  service_url=service_url,
+                                 scalable=elem.get('mutable'),
                                  )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
