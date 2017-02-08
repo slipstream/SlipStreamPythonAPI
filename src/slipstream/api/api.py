@@ -436,6 +436,7 @@ class Api(object):
                                     username=elem.get('username'),
                                     abort=elem.get('abort'),
                                     service_url=elem.get('serviceUrl'),
+                                    scalable=elem.get('mutable'),
                                     )
 
     def get_deployment(self, deployment_id):
@@ -460,6 +461,7 @@ class Api(object):
                                  username=root.get('user'),
                                  abort=abort,
                                  service_url=service_url,
+                                 scalable=root.get('mutable'),
                                  )
 
     def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
@@ -594,6 +596,57 @@ class Api(object):
         response = self.session.delete('%s/run/%s' % (self.endpoint, deployment_id))
         response.raise_for_status()
         return True
+
+    def add_node_instances(self, deployment_id, node_name, quantity=None):
+        """
+        Add new instance(s) of a deployment's node (horizontal scale up).
+        
+        Warning: The targeted deployment has to be "scalable".
+
+        :param deployment_id: The deployment UUID of the deployment on which to add new instances of a node.
+        :type deployment_id: str|UUID
+        :param node_name: Name of the node where to add instances.
+        :type node_name: str
+        :param quantity: Amount of node instances to add. If not provided it's server dependent (usually add one instance)
+        :type quantity: int
+
+        :return: The list of new node instance names.
+        :rtype: list
+
+        """
+        url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(node_name))
+        data = {"n": quantity} if quantity else None
+        
+        response = self.session.post(url, data=data)
+
+        response.raise_for_status()
+
+        return response.text.split(",")
+
+    def remove_node_instances(self, deployment_id, node_name, ids):
+        """
+        Remove a list of node instances from a deployment.
+        
+        Warning: The targeted deployment has to be "scalable".
+
+        :param deployment_id: The deployment UUID of the deployment on which to remove instances of a node.
+        :type deployment_id: str|UUID
+        :param node_name: Name of the node where to remove instances.
+        :type node_name: str
+        :param ids: List of node instance ids to remove. Ids can also be provided as a CSV list.
+        :type ids: list|str
+
+        :return: True on success
+        :rtype: bool
+
+        """
+        url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(node_name))
+
+        response = self.session.delete(url, data={"ids": ",".join(str(id_) for id_ in ids)})
+
+        response.raise_for_status()
+
+        return response.status_code == 204
 
     def usage(self):
         """

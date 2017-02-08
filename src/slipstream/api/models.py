@@ -19,6 +19,7 @@ Deployment = collections.namedtuple('Deployment', [
     'username',
     'abort',
     'service_url',
+    'scalable',
 ])
 
 Node = collections.namedtuple('Node', [
