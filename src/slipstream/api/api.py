@@ -486,6 +486,8 @@ class Api(object):
                                         status=elem.get('state').lower(),
                                         deployment_id=run_id,
                                         deployment_owner=elem.get('runOwner'),
+                                        node_name=elem.get('nodeName'),
+                                        node_instance_id=elem.get('nodeInstanceId'),
                                         ip=elem.get('ip'),
                                         cpu=elem.get('cpu'),
                                         ram=elem.get('ram'),
