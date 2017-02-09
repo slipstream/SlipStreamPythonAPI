@@ -627,7 +627,7 @@ class Api(object):
 
         return response.text.split(",")
 
-    def remove_node_instance(self, deployment_id, node_name, ids):
+    def remove_node_instances(self, deployment_id, node_name, ids):
         """
         Remove a list of node instances from a deployment.
         
