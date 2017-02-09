@@ -619,6 +619,10 @@ class Api(object):
         
         response = self.session.post(url, data=data)
 
+        if response.status_code == 409:
+            reason = etree.fromstring(response.text).get('detail')
+            raise SlipStreamError(reason)
+
         response.raise_for_status()
 
         return response.text.split(",")
@@ -643,6 +647,10 @@ class Api(object):
         url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(node_name))
 
         response = self.session.delete(url, data={"ids": ",".join(str(id_) for id_ in ids)})
+
+        if response.status_code == 409:
+            reason = etree.fromstring(response.text).get('detail')
+            raise SlipStreamError(reason)
 
         response.raise_for_status()
 
