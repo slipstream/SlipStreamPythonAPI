@@ -360,11 +360,14 @@ class Api(object):
         :type path: str
         :param description: A description of the image
         :type description: str
+        :param module_reference_uri: URI of the parent component
+        :type module_reference_uri: str
         :param cloud_identifiers: A dict where keys are cloud names and values are identifier of the image in the cloud
-        :type cloud: dict
-        :param keep_both_module_reference_uri_and_cloud_identifiers: Don't remove module_reference_uri if any cloud
-        identifier are provided, or don't remove cloud identifiers if a module_reference_uri is provided
+        :type cloud_identifiers: dict
+        :param keep_both_module_reference_uri_and_cloud_identifiers: Don't remove module_reference_uri if any cloud identifier are provided, or don't remove cloud identifiers if a module_reference_uri is provided
         :type keep_both_module_reference_uri_and_cloud_identifiers: bool
+        :param logo_link: URL to an image that should be used as logo
+        :type logo_link: str
 
         """
         url = _mod_url(path)
