@@ -395,12 +395,6 @@ class Api(object):
                 root.set('isBase', 'false')
                 root.find('cloudImageIdentifiers').clear()
 
-        if module_reference_uri is not None:
-            root.set('moduleReferenceUri', module_reference_uri)
-            if not keep_both_module_reference_uri_and_cloud_identifiers:
-                root.set('isBase', 'false')
-                root.find('cloudImageIdentifiers').clear()
-
         if cloud_identifiers is not None:
             cloud_image_identifiers = root.find('cloudImageIdentifiers')
             for cloud, identifier in cloud_identifiers.items():
