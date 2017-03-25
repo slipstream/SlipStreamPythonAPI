@@ -360,6 +360,7 @@ class Api(object):
             first_name=root.get('firstName'),
             last_name=root.get('lastName'),
             organization=root.get('organization'),
+            roles=root.get('roles', '').split(','),
             configured_clouds=configured_clouds,
             default_cloud=general_params.get('General.default.cloud.service'),
             ssh_public_keys=general_params.get('General.ssh.public.key', '').splitlines(),

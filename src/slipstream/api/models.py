@@ -80,6 +80,7 @@ User = collections.namedtuple('User', [
     'first_name',
     'last_name',
     'organization',
+    'roles',
     'configured_clouds',
     'default_cloud',
     'ssh_public_keys',
