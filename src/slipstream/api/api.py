@@ -294,6 +294,9 @@ class Api(object):
         """
         root = self._get_user_xml(username)
 
+        if 'roles' in root.attrib and not self.get_user().privileged:
+            del root.attrib['roles']
+
         attrib = {}
         self._add_to_dict_if_not_none(attrib, 'email', email)
         self._add_to_dict_if_not_none(attrib, 'roles', roles)
