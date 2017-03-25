@@ -75,6 +75,7 @@ Module = collections.namedtuple('Module', [
 User = collections.namedtuple('User', [
     'username',
     'cyclone_login',
+    'github_login',
     'email',
     'first_name',
     'last_name',

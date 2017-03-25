@@ -355,6 +355,7 @@ class Api(object):
         user = models.User(
             username=root.get('name'),
             cyclone_login=root.get('cycloneLogin'),
+            github_login=root.get('githubLogin'),
             email=root.get('email'),
             first_name=root.get('firstName'),
             last_name=root.get('lastName'),
