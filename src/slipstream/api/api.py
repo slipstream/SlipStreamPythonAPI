@@ -14,14 +14,9 @@ from six.moves.http_cookiejar import MozillaCookieJar
 from . import models
 
 try:
-    from defusedxml import cElementTree as etree
+    from xml.etree import cElementTree as etree
 except ImportError:
-    from defusedxml import ElementTree as etree
-
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
+    from xml.etree import ElementTree as etree
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +131,7 @@ class Api(object):
                                     params=params)
         response.raise_for_status()
 
-        parser = etree.DefusedXMLParser(encoding='utf-8')
+        parser = etree.XMLParser(encoding='utf-8')
         parser.feed(response.text.encode('utf-8'))
         return parser.close()
 
@@ -181,6 +176,15 @@ class Api(object):
                 for name, value in six.iteritems(params):
                     parameters['{}.{}'.format(cloud, name)] = value
         return parameters
+
+    @staticmethod
+    def _create_xml_parameter_entry(name, value):
+        category = name.split('.', 1)[0]
+        entry_xml = etree.Element('entry')
+        etree.SubElement(entry_xml, 'string').text = name
+        param_xml = etree.SubElement(entry_xml, 'parameter', name=name, category=category)
+        etree.SubElement(param_xml, 'value').text = value
+        return entry_xml
 
     @staticmethod
     def _check_xml_result(response):
@@ -260,15 +264,11 @@ class Api(object):
 
         _parameters = self._dict_values_to_string(parameters)
 
-        user_xml = ET.Element('user', **_attrib)
+        user_xml = etree.Element('user', **_attrib)
 
-        params_xml = ET.SubElement(user_xml, 'parameters')
+        params_xml = etree.SubElement(user_xml, 'parameters')
         for name, value in six.iteritems(_parameters):
-            category = name.split('.', 1)[0]
-            entry_xml = ET.SubElement(params_xml, 'entry')
-            ET.SubElement(entry_xml, 'string').text = name
-            param_xml = ET.SubElement(entry_xml, 'parameter', name=name, category=category)
-            ET.SubElement(param_xml, 'value').text = value
+            params_xml.append(self._create_xml_parameter_entry(name, value))
 
         response = self._xml_put('/user/{}'.format(username), etree.tostring(user_xml, 'UTF-8'))
 
@@ -320,7 +320,16 @@ class Api(object):
             root.set(key, val)
 
         for key, val in six.iteritems(_parameters):
-            root.find('parameters/entry/parameter[@name="' + key + '"]/value').text = val
+            param_xml = root.find('parameters/entry/parameter[@name="' + key + '"]')
+            if param_xml is None:
+                param_entry_xml = self._create_xml_parameter_entry(key, val)
+                param_xml = param_entry_xml.find('parameter')
+                root.find('parameters').append(param_entry_xml)
+
+            value_xml = param_xml.find('value')
+            if value_xml is None:
+                value_xml = etree.SubElement(param_xml, 'value')
+            value_xml.text = val
 
         response = self._xml_put('/user/{}'.format(root.get('name')), etree.tostring(root, 'UTF-8'))
 
