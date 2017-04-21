@@ -14,14 +14,9 @@ from six.moves.http_cookiejar import MozillaCookieJar
 from . import models
 
 try:
-    from defusedxml import cElementTree as etree
+    from xml.etree import cElementTree as etree
 except ImportError:
-    from defusedxml import ElementTree as etree
-
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
+    from xml.etree import ElementTree as etree
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +134,7 @@ class Api(object):
                                     params=params)
         response.raise_for_status()
 
-        parser = etree.DefusedXMLParser(encoding='utf-8')
+        parser = etree.XMLParser(encoding='utf-8')
         parser.feed(response.text.encode('utf-8'))
         return parser.close()
 
@@ -156,6 +151,17 @@ class Api(object):
         response.raise_for_status()
         return response.json()
 
+    def _get_user_xml(self, username):
+        if not username:
+            username = self.username
+
+        try:
+            return self._xml_get('/user/%s' % username)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for user: {0}.")
+            raise
+
     @staticmethod
     def _add_to_dict_if_not_none(d, key, value):
         if key is not None and value is not None:
@@ -164,6 +170,36 @@ class Api(object):
     @staticmethod
     def _dict_values_to_string(d):
         return {k: v if isinstance(v, six.string_types) else str(v) for k,v in six.iteritems(d)}
+
+    @staticmethod
+    def _flatten_cloud_parameters(cloud_parameters):
+        parameters = {}
+        if cloud_parameters is not None:
+            for cloud, params in six.iteritems(cloud_parameters):
+                for name, value in six.iteritems(params):
+                    parameters['{}.{}'.format(cloud, name)] = value
+        return parameters
+
+    @staticmethod
+    def _create_xml_parameter_entry(name, value):
+        category = name.split('.', 1)[0]
+        entry_xml = etree.Element('entry')
+        etree.SubElement(entry_xml, 'string').text = name
+        param_xml = etree.SubElement(entry_xml, 'parameter', name=name, category=category)
+        etree.SubElement(param_xml, 'value').text = value
+        return entry_xml
+
+    @staticmethod
+    def _check_xml_result(response):
+        if not (200 <= response.status_code < 300):
+            reason = ''
+            try:
+                reason = etree.fromstring(response.text).get('detail')
+            except:
+                pass
+            else:
+                raise SlipStreamError(reason)
+        response.raise_for_status()
 
     def create_user(self, username, password, email, first_name, last_name,
                     organization=None, roles=None, privileged=False,
@@ -211,6 +247,7 @@ class Api(object):
         :type cloud_parameters: dict|None
 
         """
+
         attrib = dict(name=username, password=password, email=email,
                       firstName=first_name, lastName=last_name,
                       issuper=privileged,
@@ -219,11 +256,7 @@ class Api(object):
         self._add_to_dict_if_not_none(attrib, 'roles', roles)
         _attrib = self._dict_values_to_string(attrib)
 
-        parameters = {}
-        if cloud_parameters is not None:
-            for cloud, params in six.iteritems(cloud_parameters):
-                for name, value in six.iteritems(params):
-                    parameters['{}.{}'.format(cloud, name)] = value
+        parameters = self._flatten_cloud_parameters(cloud_parameters)
 
         self._add_to_dict_if_not_none(parameters, 'General.default.cloud.service', default_cloud)
         self._add_to_dict_if_not_none(parameters, 'General.keep-running', default_keep_running)
@@ -234,27 +267,76 @@ class Api(object):
 
         _parameters = self._dict_values_to_string(parameters)
 
-        user_xml = ET.Element('user', **_attrib)
+        user_xml = etree.Element('user', **_attrib)
 
-        params_xml = ET.SubElement(user_xml, 'parameters')
+        params_xml = etree.SubElement(user_xml, 'parameters')
         for name, value in six.iteritems(_parameters):
-            category = name.split('.', 1)[0]
-            entry_xml = ET.SubElement(params_xml, 'entry')
-            ET.SubElement(entry_xml, 'string').text = name
-            param_xml = ET.SubElement(entry_xml, 'parameter', name=name, category=category)
-            ET.SubElement(param_xml, 'value').text = value
+            params_xml.append(self._create_xml_parameter_entry(name, value))
 
         response = self._xml_put('/user/{}'.format(username), etree.tostring(user_xml, 'UTF-8'))
 
-        if not (200 <= response.status_code < 300):
-            reason = ''
-            try:
-                reason = etree.fromstring(response.text).get('detail')
-            except:
-                pass
-            else:
-                raise SlipStreamError(reason)
-        response.raise_for_status()
+        self._check_xml_result(response)
+
+        return True
+
+    def update_user(self, username=None,
+                    password=None, email=None, first_name=None, last_name=None,
+                    organization=None, roles=None, privileged=None,
+                    default_cloud=None, default_keep_running=None,
+                    ssh_public_keys=None, log_verbosity=None, execution_timeout=None,
+                    usage_email=None, cloud_parameters=None):
+        """
+        Update an existing user in SlipStream.
+        Any parameter provided will be updated, others parameters will not be touched.
+
+        Parameters are identical to the ones of the method 'create_user' except that they can all be None.
+
+        Username cannot be updated.
+        This parameter define which user to update.
+        If not provided or None the current user will be used
+        """
+        root = self._get_user_xml(username)
+
+        if 'roles' in root.attrib and not self.get_user().privileged:
+            del root.attrib['roles']
+
+        attrib = {}
+        self._add_to_dict_if_not_none(attrib, 'email', email)
+        self._add_to_dict_if_not_none(attrib, 'roles', roles)
+        self._add_to_dict_if_not_none(attrib, 'password', password)
+        self._add_to_dict_if_not_none(attrib, 'issuper', privileged)
+        self._add_to_dict_if_not_none(attrib, 'lastName', last_name)
+        self._add_to_dict_if_not_none(attrib, 'firstName', first_name)
+        self._add_to_dict_if_not_none(attrib, 'organization', organization)
+        _attrib = self._dict_values_to_string(attrib)
+
+        parameters = self._flatten_cloud_parameters(cloud_parameters)
+        self._add_to_dict_if_not_none(parameters, 'General.default.cloud.service', default_cloud)
+        self._add_to_dict_if_not_none(parameters, 'General.keep-running', default_keep_running)
+        self._add_to_dict_if_not_none(parameters, 'General.Verbosity Level', log_verbosity)
+        self._add_to_dict_if_not_none(parameters, 'General.Timeout', execution_timeout)
+        self._add_to_dict_if_not_none(parameters, 'General.mail-usage', usage_email)
+        self._add_to_dict_if_not_none(parameters, 'General.ssh.public.key', ssh_public_keys)
+        _parameters = self._dict_values_to_string(parameters)
+
+        for key, val in six.iteritems(_attrib):
+            root.set(key, val)
+
+        for key, val in six.iteritems(_parameters):
+            param_xml = root.find('parameters/entry/parameter[@name="' + key + '"]')
+            if param_xml is None:
+                param_entry_xml = self._create_xml_parameter_entry(key, val)
+                param_xml = param_entry_xml.find('parameter')
+                root.find('parameters').append(param_entry_xml)
+
+            value_xml = param_xml.find('value')
+            if value_xml is None:
+                value_xml = etree.SubElement(param_xml, 'value')
+            value_xml.text = val
+
+        response = self._xml_put('/user/{}'.format(root.get('name')), etree.tostring(root, 'UTF-8'))
+
+        self._check_xml_result(response)
 
         return True
 
@@ -265,15 +347,7 @@ class Api(object):
                          Default to the user logged in if not provided or None.
         :type path: str|None
         """
-        if not username:
-            username = self.username
-
-        try:
-            root = self._xml_get('/user/%s' % username)
-        except requests.HTTPError as e:
-            if e.response.status_code == 403:
-                logger.debug("Access denied for user: {0}.")
-            raise
+        root = self._get_user_xml(username)
 
         general_params = {}
         with_username = set()
@@ -296,10 +370,12 @@ class Api(object):
         user = models.User(
             username=root.get('name'),
             cyclone_login=root.get('cycloneLogin'),
+            github_login=root.get('githubLogin'),
             email=root.get('email'),
             first_name=root.get('firstName'),
             last_name=root.get('lastName'),
             organization=root.get('organization'),
+            roles=root.get('roles', '').split(','),
             configured_clouds=configured_clouds,
             default_cloud=general_params.get('General.default.cloud.service'),
             ssh_public_keys=general_params.get('General.ssh.public.key', '').splitlines(),
@@ -506,7 +582,7 @@ class Api(object):
                                     status=elem.get('status').lower(),
                                     started_at=elem.get('startTime'),
                                     last_state_change=elem.get('lastStateChangeTime'),
-                                    clouds=elem.get('cloudServiceNames'),
+                                    clouds=elem.get('cloudServiceNames','').split(','),
                                     username=elem.get('username'),
                                     abort=elem.get('abort'),
                                     service_url=elem.get('serviceUrl'),
