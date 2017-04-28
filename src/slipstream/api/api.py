@@ -7,6 +7,7 @@ import uuid
 import logging
 
 import requests
+import time
 from six import string_types, integer_types
 from six.moves.urllib.parse import urlparse
 from six.moves.http_cookiejar import MozillaCookieJar
@@ -73,6 +74,18 @@ class SessionStore(requests.Session):
             self.cookies.load(ignore_discard=True)
             self.cookies.clear_expired_cookies()
 
+    def is_alive(self, in_the_next_x_seconds=0):
+        self.cookies.clear_expired_cookies()
+        if in_the_next_x_seconds == 0:
+            return len(self.cookies) > 0
+        limit = time.time() + in_the_next_x_seconds
+        for cookie in self.cookies:
+            if cookie.expires > limit:
+                return True
+        return False
+
+
+
     def request(self, *args, **kwargs):
         response = super(SessionStore, self).request(*args, **kwargs)
         self.cookies.save(ignore_discard=True)
@@ -93,25 +106,39 @@ class Api(object):
     GLOBAL_PARAMETERS = ['bypass-ssh-check', 'refqname', 'keep-running', 'tags', 'mutable', 'type']
     KEEP_RUNNING_VALUES = ['always', 'never', 'on-success', 'on-error']
 
-    def __init__(self, endpoint=None, cookie_file=None, insecure=False):
+    def __init__(self, endpoint=None, cookie_file=None, insecure=False, username=None):
         self.endpoint = DEFAULT_ENDPOINT if endpoint is None else endpoint
-        self.session = SessionStore(cookie_file)
+        self.username = username
+        self.insecure = insecure
+        if username != None:
+            self._init_session(insecure)
+
+    def _init_session(self, username, insecure=False):
+        self.username = username
+        self.session = SessionStore(
+            cookie_file="%(path)s.%(username)s.txt" % {
+                'path': DEFAULT_COOKIE_FILE[:-4],
+                'username': self.username,
+            }
+        )
         self.session.verify = (insecure == False)
         self.session.headers.update({'Accept': 'application/xml'})
         if insecure:
             requests.packages.urllib3.disable_warnings(
                 requests.packages.urllib3.exceptions.InsecureRequestWarning)
-        self.username = None
 
-    def login(self, username, password):
+    def login(self, username, password, forced=False, minimum_life_length_remainig_in_seconds=300):
         """
 
         :param username: 
         :param password: 
 
         """
-        self.username = username
+        if self.username != username :
+            self._init_session(username=username, insecure=self.insecure)
 
+        if self.session.is_alive(minimum_life_length_remainig_in_seconds) and not forced:
+            return
         response = self.session.post('%s/auth/login' % self.endpoint, data={
             'username': username,
             'password': password
