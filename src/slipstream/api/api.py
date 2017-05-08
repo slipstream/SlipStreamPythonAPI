@@ -7,6 +7,7 @@ import uuid
 import logging
 
 import requests
+import time
 from six import string_types, integer_types
 from six.moves.urllib.parse import urlparse
 from six.moves.http_cookiejar import MozillaCookieJar
@@ -73,6 +74,18 @@ class SessionStore(requests.Session):
             self.cookies.load(ignore_discard=True)
             self.cookies.clear_expired_cookies()
 
+    def is_alive(self, in_the_next_x_seconds=0):
+        self.cookies.clear_expired_cookies()
+        if in_the_next_x_seconds == 0:
+            return len(self.cookies) > 0
+        limit = time.time() + in_the_next_x_seconds
+        for cookie in self.cookies:
+            if cookie.expires > limit:
+                return True
+        return False
+
+
+
     def request(self, *args, **kwargs):
         response = super(SessionStore, self).request(*args, **kwargs)
         self.cookies.save(ignore_discard=True)
@@ -93,25 +106,39 @@ class Api(object):
     GLOBAL_PARAMETERS = ['bypass-ssh-check', 'refqname', 'keep-running', 'tags', 'mutable', 'type']
     KEEP_RUNNING_VALUES = ['always', 'never', 'on-success', 'on-error']
 
-    def __init__(self, endpoint=None, cookie_file=None, insecure=False):
+    def __init__(self, endpoint=None, cookie_file=None, insecure=False, username=None):
         self.endpoint = DEFAULT_ENDPOINT if endpoint is None else endpoint
-        self.session = SessionStore(cookie_file)
+        self.username = username
+        self.insecure = insecure
+        if username != None:
+            self._init_session(insecure)
+
+    def _init_session(self, username, insecure=False):
+        self.username = username
+        self.session = SessionStore(
+            cookie_file="%(path)s.%(username)s.txt" % {
+                'path': DEFAULT_COOKIE_FILE[:-4],
+                'username': self.username,
+            }
+        )
         self.session.verify = (insecure == False)
         self.session.headers.update({'Accept': 'application/xml'})
         if insecure:
             requests.packages.urllib3.disable_warnings(
                 requests.packages.urllib3.exceptions.InsecureRequestWarning)
-        self.username = None
 
-    def login(self, username, password):
+    def login(self, username, password, forced=False, minimum_life_length_remainig_in_seconds=300):
         """
 
         :param username: 
         :param password: 
 
         """
-        self.username = username
+        if self.username != username :
+            self._init_session(username=username, insecure=self.insecure)
 
+        if self.session.is_alive(minimum_life_length_remainig_in_seconds) and not forced:
+            return
         response = self.session.post('%s/auth/login' % self.endpoint, data={
             'username': username,
             'password': password
@@ -124,6 +151,9 @@ class Api(object):
         response.raise_for_status()
         url = urlparse(self.endpoint)
         self.session.clear(url.netloc)
+
+    def exposed_xml_get(self, url, **params):
+        return self._xml_get(url, **params)
 
     def _xml_get(self, url, **params):
         response = self.session.get('%s%s' % (self.endpoint, url),
@@ -420,6 +450,77 @@ class Api(object):
                                                    root.get('shortName'))))
         return module
 
+    def update_image(
+            self,
+            path,
+            description=None,
+            module_reference_uri=None,
+            cloud_identifiers=None,
+            keep_both_module_reference_uri_and_cloud_identifiers=False,
+            logo_link=None,
+    ):
+        """
+        Update a component, when a parameter is not provided in parameter it is unchanged.
+
+        :param path: The path of an element (project/component/application)
+        :type path: str
+        :param description: A description of the image
+        :type description: str
+        :param module_reference_uri: URI of the parent component
+        :type module_reference_uri: str
+        :param cloud_identifiers: A dict where keys are cloud names and values are identifier of the image in the cloud
+        :type cloud_identifiers: dict
+        :param keep_both_module_reference_uri_and_cloud_identifiers: Don't remove module_reference_uri if any cloud identifier are provided, or don't remove cloud identifiers if a module_reference_uri is provided
+        :type keep_both_module_reference_uri_and_cloud_identifiers: bool
+        :param logo_link: URL to an image that should be used as logo
+        :type logo_link: str
+
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+        if str(root.get('category')) != "Image":
+            raise SlipStreamError("Specified path is not a component")
+
+        if description is not None:
+            root.set('description', description)
+
+        if logo_link is not None:
+            root.set('logoLink', logo_link)
+
+        if module_reference_uri is not None:
+            root.set('moduleReferenceUri', module_reference_uri)
+            if not keep_both_module_reference_uri_and_cloud_identifiers:
+                root.set('isBase', 'false')
+                root.find('cloudImageIdentifiers').clear()
+
+        if cloud_identifiers is not None:
+            cloud_image_identifiers = root.find('cloudImageIdentifiers')
+            for cloud, identifier in cloud_identifiers.items():
+                node = cloud_image_identifiers.find('cloudImageIdentifier[@cloudServiceName="%s"]' % cloud)
+                if (identifier is None or len(identifier) == 0):
+                    if node is not None:
+                        cloud_image_identifiers.remove(node)
+                else:
+                    if node is None:
+                        node = ET.Element('cloudImageIdentifier', cloudServiceName=cloud)
+                        cloud_image_identifiers.append(node)
+                    node.set('cloudImageIdentifier', identifier)
+            if not keep_both_module_reference_uri_and_cloud_identifiers:
+                root.set('moduleReferenceUri', '')
+                root.set('isBase', 'true')
+
+        try:
+            self._xml_put(url, etree.tostring(root, 'UTF-8'))
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+
     def get_application_nodes(self, path):
         """
         Get nodes of an application
@@ -697,6 +798,10 @@ class Api(object):
         
         response = self.session.post(url, data=data)
 
+        if response.status_code == 409:
+            reason = etree.fromstring(response.text).get('detail')
+            raise SlipStreamError(reason)
+
         response.raise_for_status()
 
         return response.text.split(",")
@@ -721,6 +826,10 @@ class Api(object):
         url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(node_name))
 
         response = self.session.delete(url, data={"ids": ",".join(str(id_) for id_ in ids)})
+
+        if response.status_code == 409:
+            reason = etree.fromstring(response.text).get('detail')
+            raise SlipStreamError(reason)
 
         response.raise_for_status()
 
