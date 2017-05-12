@@ -102,6 +102,7 @@ class Api(object):
             requests.packages.urllib3.disable_warnings(
                 requests.packages.urllib3.exceptions.InsecureRequestWarning)
         self.username = None
+        self._cloud_entry_point = None
 
     def login(self, username, password):
         """
@@ -141,12 +142,32 @@ class Api(object):
                                          'Content-Type': 'application/xml'},
                                 data=data)
 
-    def _json_get(self, url, **params):
+    def _json_get(self, url, params=None):
         response = self.session.get('%s%s' % (self.endpoint, url),
                                     headers={'Accept': 'application/json'},
                                     params=params)
         response.raise_for_status()
         return response.json()
+
+    def _json_put(self, url, params=None, json=None, data=None):
+        response = self.session.put('%s%s' % (self.endpoint, url),
+                                    headers={'Accept': 'application/json'},
+                                    params=params,
+                                    json=json,
+                                    data=data)
+        response.raise_for_status()
+        return response.json()
+
+    def _json_post(self, url, params=None, json=None, data=None):
+        response = self.session.post('%s%s' % (self.endpoint, url),
+                                    headers={'Accept': 'application/json'},
+                                     params=params,
+                                     json=json,
+                                     data=data)
+        response.raise_for_status()
+        return response.json()
+
+
 
     def _get_user_xml(self, username):
         if not username:
@@ -197,6 +218,107 @@ class Api(object):
             else:
                 raise SlipStreamError(reason)
         response.raise_for_status()
+
+    def _get_cloud_entry_point(self):
+        cep_json = self._cimi_get('cloud-entry-point')
+        return models.CloudEntryPoint(cep_json)
+
+    @property
+    def cloud_entry_point(self):
+        if self._cloud_entry_point is None:
+            self._cloud_entry_point = self._get_cloud_entry_point()
+        return self._cloud_entry_point
+
+    def _cimi_find_operation_href(self, collection, operation):
+        operation_href = collection.operations_by_name.get(operation, {}).get('href')
+
+        if not operation_href:
+            raise KeyError("Operation '{}' not found.".format(operation))
+
+        return operation_href
+
+    def _cimi_get_uri(self, resource_uri_or_id=None, resource_type=None):
+        if resource_uri_or_id is None and resource_type is None:
+            raise TypeError("You have to specify 'resource_uri' or 'resource_type'.")
+
+        if resource_uri_or_id is not None and resource_type is not None:
+            raise TypeError("You can only specify 'resource_uri' or 'resource_type', not both.")
+
+        if resource_type is not None:
+            resource_uri_or_id = self.cloud_entry_point.entry_points.get(resource_type)
+            if resource_uri_or_id is None:
+                raise KeyError("Resource type '{}' not found.".format(resource_type))
+
+        return resource_uri_or_id
+
+    def _cimi_get(self, resource_uri_or_id=None, resource_type=None, params=None):
+        uri = self._cimi_get_uri(resource_uri_or_id, resource_type)
+        return self._json_get('/api/{}'.format(uri), params=params)
+
+    def _cimi_post(self, resource_uri_or_id=None, resource_type=None, params=None, json=None, data=None):
+        uri = self._cimi_get_uri(resource_uri_or_id, resource_type)
+        return self._json_post('/api/{}'.format(uri), params=params, json=json, data=data)
+
+    def _cimi_put(self, resource_uri_or_id=None, resource_type=None, params=None, json=None, data=None):
+        uri = self._cimi_get_uri(resource_uri_or_id, resource_type)
+        return self._json_put('/api/{}'.format(uri), params=params, json=json, data=data)
+
+    def _cimi_delete(self, resource_uri_or_id=None, resource_type=None):
+        # uri = self._cimi_get_uri(resource_uri_or_id, resource_type)
+        raise NotImplementedError()
+
+    def cimi_get(self, resource_uri_or_id):
+        resp_json = self._cimi_get(resource_uri_or_id)
+        return models.CimiResource(resp_json)
+
+    def cimi_add(self, resource_type, data):
+        collection = self.cimi_search(resource_type=resource_type)
+        operation_href = self._cimi_find_operation_href(collection, 'add')
+        return self._cimi_post(resource_uri_or_id=operation_href, json=data)
+
+    def cimi_edit(self, resource_uri_or_id):
+        raise NotImplementedError()
+
+    def cimi_delete(self, resource_uri_or_id):
+        raise NotImplementedError()
+
+    cimi_parameters_name = ['first', 'last', 'filter', 'select', 'expand', 'orderby']
+
+    def _split_cimi_params(self, params):
+        cimi_params = {}
+        other_params = {}
+        for key, value in params.items():
+            if key in self.cimi_parameters_name:
+                cimi_params['$'+key] = value
+            else:
+                other_params[key] = value
+        return cimi_params, other_params
+
+
+    def cimi_search(self, resource_type, **kwargs):
+        """ Search for CIMI resources of the given type.
+
+        :keyword    first: Start from the 'first' element (1-based)
+        :type       first: int
+
+        :keyword    last: Stop at the 'last' element (1-based)
+        :type       last: int
+
+        :keyword    filter: CIMI filter
+        :type       filter: str
+
+        :keyword    select: Select attributes to return. (resourceURI always returned)
+        :type       select: str or list of str
+
+        :keyword    expand: Expand linked resources (not implemented yet)
+        :type       expand: str or list of str
+
+        :keyword    orderby: Sort by the specified attribute
+        :type       orderby: str or list of str
+        """
+        cimi_params, query_params = self._split_cimi_params(kwargs)
+        resp_json = self._cimi_put(resource_type=resource_type, data=cimi_params, params=query_params)
+        return models.CimiResource(resp_json)
 
     def create_user(self, username, password, email, first_name, last_name,
                     organization=None, roles=None, privileged=False,
