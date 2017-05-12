@@ -4,6 +4,9 @@ import re
 import warnings
 import collections
 
+from threading import Lock
+
+
 first_cap_re = re.compile('(.)([A-Z][a-z]+)')
 all_cap_re = re.compile('([a-z0-9])([A-Z])')
 
@@ -20,25 +23,18 @@ def truncate_middle(max_len, message, truncate_message='...'):
     return message
 
 
-class CimiResource(object):
-
-    # _attributes_names = ['id', 'resourceURI', 'created', 'updated', 'acl', 'name', 'description', 'properties', 'operations']
+class CimiResponse(object):
 
     def __init__(self, json):
         self.json = json
         self._attributes_names = []
         self.extract_and_set_attributes()
-        self.operations_by_name = self.get_operations_by_name()
-
-    def get_operations_by_name(self):
-        operations = self.json.get('operations', [])
-        return {op['rel']: op for op in operations if 'rel' in op}
 
     def extract_and_set_attributes(self):
         for key, value in list(self.json.items()):
             name = camel_to_snake(key)
             if hasattr(self, name):
-                warnings.warn('Cannot set attribute "{}" because it is already set'.format(name), RuntimeWarning)
+                warnings.warn('Cannot set attribute "{}" because it already exist'.format(name), RuntimeWarning)
             else:
                 setattr(self, name, value)
                 self._attributes_names.append(name)
@@ -50,9 +46,46 @@ class CimiResource(object):
         return '{}:\n{}'.format(self.__class__.__name__, '\n'.join(sorted(data)))
 
 
-class CloudEntryPoint(CimiResource):
+class CimiResource(CimiResponse):
 
-    # _attributes_names = CimiResource._attributes_names + ['baseURI', 'href']
+    def __init__(self, json):
+        super(CimiResource, self).__init__(json)
+        self.operations_by_name = self.get_operations_by_name()
+
+    def get_operations_by_name(self):
+        operations = self.json.get('operations', [])
+        return {op['rel']: op for op in operations if 'rel' in op}
+
+
+class CimiCollection(CimiResource):
+
+    def __init__(self, json, resource_type):
+        super(CimiResource, self).__init__(json)
+        self.resource_type = resource_type
+        self.__lock_iter = Lock()
+        self.__lock_list = Lock()
+        self.__resources = []
+        self.__json_resources = self.json.get(self.resource_type, [])
+
+    def resources(self):
+        for i in range(len(self.__json_resources)):
+            with self.__lock_iter:
+                if i < len(self.__resources):
+                    yield self.__resources[i]
+                else:
+                    resource = CimiResource(self.__json_resources[i])
+                    self.__resources.append(resource)
+                    yield resource
+
+    @property
+    def resources_list(self):
+        with self.__lock_list:
+            if len(self.__resources) != len(self.__json_resources):
+                list(self.resources())
+            return self.__resources
+
+
+class CloudEntryPoint(CimiResource):
 
     def __init__(self, json):
         super(CloudEntryPoint, self).__init__(json)
