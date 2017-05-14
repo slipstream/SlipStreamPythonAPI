@@ -60,7 +60,7 @@ class CimiResource(CimiResponse):
 class CimiCollection(CimiResource):
 
     def __init__(self, json, resource_type):
-        super(CimiResource, self).__init__(json)
+        super(CimiCollection, self).__init__(json)
         self.resource_type = resource_type
         self.__lock_iter = Lock()
         self.__lock_list = Lock()
