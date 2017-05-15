@@ -106,7 +106,7 @@ class Api(object):
             requests.packages.urllib3.disable_warnings(
                 requests.packages.urllib3.exceptions.InsecureRequestWarning)
         self.username = None
-        self._cloud_entry_point = None
+        self._cimi_cloud_entry_point = None
 
     def login(self, username, password):
         """
@@ -196,15 +196,15 @@ class Api(object):
                 raise SlipStreamError(reason)
         response.raise_for_status()
 
-    def _get_cloud_entry_point(self):
+    def _cimi_get_cloud_entry_point(self):
         cep_json = self._cimi_get('cloud-entry-point')
         return models.CloudEntryPoint(cep_json)
 
     @property
-    def cloud_entry_point(self):
-        if self._cloud_entry_point is None:
-            self._cloud_entry_point = self._get_cloud_entry_point()
-        return self._cloud_entry_point
+    def cimi_cloud_entry_point(self):
+        if self._cimi_cloud_entry_point is None:
+            self._cimi_cloud_entry_point = self._cimi_get_cloud_entry_point()
+        return self._cimi_cloud_entry_point
 
     @classmethod
     def _split_cimi_params(cls, params):
@@ -234,7 +234,7 @@ class Api(object):
             raise TypeError("You can only specify 'resource_uri' or 'resource_type', not both.")
 
         if resource_type is not None:
-            resource_id = self.cloud_entry_point.entry_points.get(resource_type)
+            resource_id = self.cimi_cloud_entry_point.entry_points.get(resource_type)
             if resource_id is None:
                 raise KeyError("Resource type '{}' not found.".format(resource_type))
 
@@ -274,7 +274,8 @@ class Api(object):
         return self._cimi_request('DELETE', resource_id)
 
     def cimi_get(self, resource_id):
-        """
+        """ Retreive a CIMI resource by it's resource id
+
         :param      resource_id: The id of the resource to retrieve
         :type       resource_id: str
 
@@ -283,23 +284,8 @@ class Api(object):
         resp_json = self._cimi_get(resource_id=resource_id)
         return models.CimiResource(resp_json)
 
-    def cimi_add(self, resource_type, data):
-        """
-        :param      resource_type: Type of the resource (Collection name)
-        :type       resource_type: str
-
-        :param      data: The data to serialize into JSON
-        :type       data: dict
-
-        :return:    A CimiResponse object which should contain the attributes 'status', 'resource-id' and 'message'
-        :rtype:     CimiResponse
-        """
-        collection = self.cimi_search(resource_type=resource_type, last=0)
-        operation_href = self._cimi_find_operation_href(collection, 'add')
-        return models.CimiResponse(self._cimi_post(resource_id=operation_href, json=data))
-
     def cimi_edit(self, resource_id, data):
-        """
+        """ Edit a CIMI resource by it's resource id
 
         :param      resource_id: The id of the resource to edit
         :type       resource_id: str
@@ -328,8 +314,24 @@ class Api(object):
         operation_href = self._cimi_find_operation_href(resource, 'delete')
         return models.CimiResponse(self._cimi_delete(resource_id=operation_href))
 
+    def cimi_add(self, resource_type, data):
+        """ Add a CIMI resource to the specified resource_type (Collection)
+
+        :param      resource_type: Type of the resource (Collection name)
+        :type       resource_type: str
+
+        :param      data: The data to serialize into JSON
+        :type       data: dict
+
+        :return:    A CimiResponse object which should contain the attributes 'status', 'resource-id' and 'message'
+        :rtype:     CimiResponse
+        """
+        collection = self.cimi_search(resource_type=resource_type, last=0)
+        operation_href = self._cimi_find_operation_href(collection, 'add')
+        return models.CimiResponse(self._cimi_post(resource_id=operation_href, json=data))
+
     def cimi_search(self, resource_type, **kwargs):
-        """ Search for CIMI resources of the given type.
+        """ Search for CIMI resources of the given type (Collection).
 
         :param      resource_type: Type of the resource (Collection name)
         :type       resource_type: str

@@ -95,10 +95,6 @@ class CloudEntryPoint(CimiResource):
         return {k: v['href'] for k,v in list(self.json.items()) if isinstance(v, dict) and 'href' in v}
 
 
-
-
-
-
 App = collections.namedtuple('App', [
     'name',
     'type',
