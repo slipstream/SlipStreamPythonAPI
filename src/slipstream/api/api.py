@@ -7,6 +7,8 @@ import uuid
 import logging
 
 import requests
+from requests.exceptions import HTTPError
+
 from six import string_types, integer_types
 from six.moves.urllib.parse import urlparse
 from six.moves.http_cookiejar import MozillaCookieJar
@@ -51,9 +53,10 @@ def ElementTree__iter(root):
 
 class SlipStreamError(Exception):
 
-    def __init__(self, reason):
+    def __init__(self, reason, response=None):
         super(SlipStreamError, self).__init__(reason)
         self.reason = reason
+        self.response = response
 
 
 class SessionStore(requests.Session):
@@ -92,6 +95,7 @@ class Api(object):
 
     GLOBAL_PARAMETERS = ['bypass-ssh-check', 'refqname', 'keep-running', 'tags', 'mutable', 'type']
     KEEP_RUNNING_VALUES = ['always', 'never', 'on-success', 'on-error']
+    CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand', 'orderby']
 
     def __init__(self, endpoint=None, cookie_file=None, insecure=False):
         self.endpoint = DEFAULT_ENDPOINT if endpoint is None else endpoint
@@ -102,6 +106,7 @@ class Api(object):
             requests.packages.urllib3.disable_warnings(
                 requests.packages.urllib3.exceptions.InsecureRequestWarning)
         self.username = None
+        self._cimi_cloud_entry_point = None
 
     def login(self, username, password):
         """
@@ -140,13 +145,6 @@ class Api(object):
                                 headers={'Accept': 'application/xml',
                                          'Content-Type': 'application/xml'},
                                 data=data)
-
-    def _json_get(self, url, **params):
-        response = self.session.get('%s%s' % (self.endpoint, url),
-                                    headers={'Accept': 'application/json'},
-                                    params=params)
-        response.raise_for_status()
-        return response.json()
 
     def _get_user_xml(self, username):
         if not username:
@@ -197,6 +195,172 @@ class Api(object):
             else:
                 raise SlipStreamError(reason)
         response.raise_for_status()
+
+    def _cimi_get_cloud_entry_point(self):
+        cep_json = self._cimi_get('cloud-entry-point')
+        return models.CloudEntryPoint(cep_json)
+
+    @property
+    def cimi_cloud_entry_point(self):
+        if self._cimi_cloud_entry_point is None:
+            self._cimi_cloud_entry_point = self._cimi_get_cloud_entry_point()
+        return self._cimi_cloud_entry_point
+
+    @classmethod
+    def _split_cimi_params(cls, params):
+        cimi_params = {}
+        other_params = {}
+        for key, value in params.items():
+            if key in cls.CIMI_PARAMETERS_NAME:
+                cimi_params['$'+key] = value
+            else:
+                other_params[key] = value
+        return cimi_params, other_params
+
+    @staticmethod
+    def _cimi_find_operation_href(cimi_resource, operation):
+        operation_href = cimi_resource.operations_by_name.get(operation, {}).get('href')
+
+        if not operation_href:
+            raise KeyError("Operation '{}' not found.".format(operation))
+
+        return operation_href
+
+    def _cimi_get_uri(self, resource_id=None, resource_type=None):
+        if resource_id is None and resource_type is None:
+            raise TypeError("You have to specify 'resource_uri' or 'resource_type'.")
+
+        if resource_id is not None and resource_type is not None:
+            raise TypeError("You can only specify 'resource_uri' or 'resource_type', not both.")
+
+        if resource_type is not None:
+            resource_id = self.cimi_cloud_entry_point.entry_points.get(resource_type)
+            if resource_id is None:
+                raise KeyError("Resource type '{}' not found.".format(resource_type))
+
+        return resource_id
+
+    def _cimi_request(self, method, uri, params=None, json=None, data=None):
+        response = self.session.request(method, '{}/{}/{}'.format(self.endpoint, 'api', uri),
+                                        headers={'Accept': 'application/json'},
+                                        params=params,
+                                        json=json,
+                                        data=data)
+        try:
+            response.raise_for_status()
+        except HTTPError as e:
+            message = str(e)
+            try:
+                message = e.response.json().get('message')
+            except:
+                pass
+            raise SlipStreamError(message, response)
+
+        return response.json()
+
+    def _cimi_get(self, resource_id=None, resource_type=None, params=None):
+        uri = self._cimi_get_uri(resource_id, resource_type)
+        return self._cimi_request('GET', uri, params=params)
+
+    def _cimi_post(self, resource_id=None, resource_type=None, params=None, json=None, data=None):
+        uri = self._cimi_get_uri(resource_id, resource_type)
+        return self._cimi_request('POST', uri, params=params, json=json, data=data)
+
+    def _cimi_put(self, resource_id=None, resource_type=None, params=None, json=None, data=None):
+        uri = self._cimi_get_uri(resource_id, resource_type)
+        return self._cimi_request('PUT', uri, params=params, json=json, data=data)
+
+    def _cimi_delete(self, resource_id=None):
+        return self._cimi_request('DELETE', resource_id)
+
+    def cimi_get(self, resource_id):
+        """ Retreive a CIMI resource by it's resource id
+
+        :param      resource_id: The id of the resource to retrieve
+        :type       resource_id: str
+
+        :return:    A CimiResource object corresponding to the resource
+        """
+        resp_json = self._cimi_get(resource_id=resource_id)
+        return models.CimiResource(resp_json)
+
+    def cimi_edit(self, resource_id, data):
+        """ Edit a CIMI resource by it's resource id
+
+        :param      resource_id: The id of the resource to edit
+        :type       resource_id: str
+
+        :param      data: The data to serialize into JSON
+        :type       data: dict
+
+        :return:    A CimiResponse object which should contain the attributes 'status', 'resource-id' and 'message'
+        :rtype:     CimiResponse
+        """
+        resource = self.cimi_get(resource_id=resource_id)
+        operation_href = self._cimi_find_operation_href(resource, 'edit')
+        return models.CimiResponse(self._cimi_put(resource_id=operation_href, json=data))
+
+    def cimi_delete(self, resource_id):
+        """ Delete a CIMI resource by it's resource id
+         
+        :param  resource_id: The id of the resource to delete
+        :type   resource_id: str
+
+        :return:    A CimiResponse object which should contain the attributes 'status', 'resource-id' and 'message'
+        :rtype:     CimiResponse
+        
+        """
+        resource = self.cimi_get(resource_id=resource_id)
+        operation_href = self._cimi_find_operation_href(resource, 'delete')
+        return models.CimiResponse(self._cimi_delete(resource_id=operation_href))
+
+    def cimi_add(self, resource_type, data):
+        """ Add a CIMI resource to the specified resource_type (Collection)
+
+        :param      resource_type: Type of the resource (Collection name)
+        :type       resource_type: str
+
+        :param      data: The data to serialize into JSON
+        :type       data: dict
+
+        :return:    A CimiResponse object which should contain the attributes 'status', 'resource-id' and 'message'
+        :rtype:     CimiResponse
+        """
+        collection = self.cimi_search(resource_type=resource_type, last=0)
+        operation_href = self._cimi_find_operation_href(collection, 'add')
+        return models.CimiResponse(self._cimi_post(resource_id=operation_href, json=data))
+
+    def cimi_search(self, resource_type, **kwargs):
+        """ Search for CIMI resources of the given type (Collection).
+
+        :param      resource_type: Type of the resource (Collection name)
+        :type       resource_type: str
+
+        :keyword    first: Start from the 'first' element (1-based)
+        :type       first: int
+
+        :keyword    last: Stop at the 'last' element (1-based)
+        :type       last: int
+
+        :keyword    filter: CIMI filter
+        :type       filter: str
+
+        :keyword    select: Select attributes to return. (resourceURI always returned)
+        :type       select: str or list of str
+
+        :keyword    expand: Expand linked resources (not implemented yet)
+        :type       expand: str or list of str
+
+        :keyword    orderby: Sort by the specified attribute
+        :type       orderby: str or list of str
+
+        :return:    A CimiCollection object with the list of found resources available
+                    as a generator with the method 'resources()' or with the attribute 'resources_list'
+        :rtype:     CimiCollection
+        """
+        cimi_params, query_params = self._split_cimi_params(kwargs)
+        resp_json = self._cimi_put(resource_type=resource_type, data=cimi_params, params=query_params)
+        return models.CimiCollection(resp_json, resource_type)
 
     def create_user(self, username, password, email, first_name, last_name,
                     organization=None, roles=None, privileged=False,
