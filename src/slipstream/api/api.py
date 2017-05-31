@@ -507,7 +507,7 @@ class Api(object):
                         cloud_image_identifiers.remove(node)
                 else:
                     if node is None:
-                        node = ET.Element('cloudImageIdentifier', cloudServiceName=cloud)
+                        node = etree.Element('cloudImageIdentifier', cloudServiceName=cloud)
                         cloud_image_identifiers.append(node)
                     node.set('cloudImageIdentifier', identifier)
             if not keep_both_module_reference_uri_and_cloud_identifiers:
