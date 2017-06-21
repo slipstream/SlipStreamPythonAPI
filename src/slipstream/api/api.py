@@ -254,11 +254,18 @@ class Api(object):
         try:
             response.raise_for_status()
         except HTTPError as e:
-            message = str(e)
+            message = 'Unknown error'
             try:
-                message = e.response.json().get('message')
+                json_msg = e.response.json()
+                message = json_msg.get('message')
+                if message is None:
+                    error = json_msg.get('error')
+                    message = error.get('code') + ' - ' + error.get('reason')
             except:
-                pass
+                try:
+                    message = e.response.text
+                except:
+                    message = str(e)
             raise SlipStreamError(message, response)
 
         return response.json()
