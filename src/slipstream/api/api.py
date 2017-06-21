@@ -107,6 +107,7 @@ class Api(object):
                 requests.packages.urllib3.disable_warnings(
                     requests.packages.urllib3.exceptions.InsecureRequestWarning)
             except:
+                import urllib3
                 urllib3.disable_warnings(
                     urllib3.exceptions.InsecureRequestWarning)
         self.username = None
