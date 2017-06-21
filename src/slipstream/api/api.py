@@ -103,8 +103,12 @@ class Api(object):
         self.session.verify = (insecure == False)
         self.session.headers.update({'Accept': 'application/xml'})
         if insecure:
-            requests.packages.urllib3.disable_warnings(
-                requests.packages.urllib3.exceptions.InsecureRequestWarning)
+            try: 
+                requests.packages.urllib3.disable_warnings(
+                    requests.packages.urllib3.exceptions.InsecureRequestWarning)
+            except:
+                urllib3.disable_warnings(
+                    urllib3.exceptions.InsecureRequestWarning)
         self.username = None
         self._cimi_cloud_entry_point = None
 
