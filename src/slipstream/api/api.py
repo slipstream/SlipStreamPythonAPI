@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import re
 import six
 import stat
 import uuid
@@ -78,8 +79,20 @@ class SessionStore(requests.Session):
 
     def request(self, *args, **kwargs):
         response = super(SessionStore, self).request(*args, **kwargs)
+        if not self.verify and response.cookies:
+            self._unsecure_cookie(args[1])
         self.cookies.save(ignore_discard=True)
         return response
+
+    def _unsecure_cookie(self, url_str):
+            url = urlparse(url_str)
+            if url.scheme == 'http':
+                host = url.netloc
+                try:
+                    host = re.findall('(?:[^@]*@)?([^:]+)(?::[0-9]*)?', url.netloc)[0]
+                except:
+                    pass
+                self.cookies._cookies.get(host, {}).get('/', {}).get('com.sixsq.slipstream.cookie').secure = False
 
     def clear(self, domain):
         """Clear cookies for the specified domain."""
