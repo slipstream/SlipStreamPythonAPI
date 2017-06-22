@@ -8,6 +8,7 @@ import uuid
 import logging
 
 import requests
+from requests.cookies import MockRequest
 from requests.exceptions import HTTPError
 
 from six import string_types, integer_types
@@ -80,19 +81,16 @@ class SessionStore(requests.Session):
     def request(self, *args, **kwargs):
         response = super(SessionStore, self).request(*args, **kwargs)
         if not self.verify and response.cookies:
-            self._unsecure_cookie(args[1])
+            self._unsecure_cookie(args[1], response)
         self.cookies.save(ignore_discard=True)
         return response
 
-    def _unsecure_cookie(self, url_str):
-            url = urlparse(url_str)
-            if url.scheme == 'http':
-                host = url.netloc
-                try:
-                    host = re.findall('(?:[^@]*@)?([^:]+)(?::[0-9]*)?', url.netloc)[0]
-                except:
-                    pass
-                self.cookies._cookies.get(host, {}).get('/', {}).get('com.sixsq.slipstream.cookie').secure = False
+    def _unsecure_cookie(self, url_str, response):
+        url = urlparse(url_str)
+        if url.scheme == 'http':
+            for cookie in response.cookies:
+                cookie.secure = False
+                self.cookies.set_cookie_if_ok(cookie, MockRequest(response.request))
 
     def clear(self, domain):
         """Clear cookies for the specified domain."""
