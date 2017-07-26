@@ -180,5 +180,20 @@ User = collections.namedtuple('User', [
     'keep_running',
     'timeout',
     'privileged',
+    'active_since',
+    'last_online',
+    'online',
 ])
 
+UserItem = collections.namedtuple('UserItem', [
+    'username',
+    'email',
+    'first_name',
+    'last_name',
+    'organization',
+    'roles',
+    'privileged',
+    'active_since',
+    'last_online',
+    'online',
+])
