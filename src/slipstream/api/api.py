@@ -173,6 +173,14 @@ class Api(object):
                 logger.debug("Access denied for user: {0}.")
             raise
 
+    def _list_users_xml(self):
+        try:
+            return self._xml_get('/users')
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for users.")
+            raise
+
     @staticmethod
     def _add_to_dict_if_not_none(d, key, value):
         if key is not None and value is not None:
@@ -565,9 +573,29 @@ class Api(object):
             ssh_public_keys=general_params.get('General.ssh.public.key', '').splitlines(),
             keep_running=general_params.get('General.keep-running'),
             timeout=general_params.get('General.Timeout'),
-            privileged=root.get('issuper').lower() == "true",
-        )
+            privileged=root.get('issuper',"false").lower() == "true",
+            active_since=root.get('activeSince'),
+            last_online=root.get('lastOnline'),
+            online=root.get('online'))
+            
         return user
+
+    def list_users(self):
+        """
+        List users (requires privileged access)
+        """
+        root = self._list_users_xml()
+        for elem in ElementTree__iter(root)('item'):
+            yield models.UserItem(username=elem.get('name'),
+                                  email=elem.get('email'),
+                                  first_name=elem.get('firstName'),
+                                  last_name=elem.get('lastName'),
+                                  organization=elem.get('organization'),
+                                  roles=elem.get('roles', '').split(','),
+                                  privileged=elem.get('issuper',"false").lower() == "true",
+                                  active_since=elem.get('activeSince'),
+                                  last_online=elem.get('lastOnline'),
+                                  online=elem.get('online'))
 
     def list_applications(self):
         """
