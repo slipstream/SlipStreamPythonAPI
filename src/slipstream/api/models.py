@@ -1,3 +1,7 @@
+"""
+Objects representing different SlipStream resources.
+"""
+
 from __future__ import unicode_literals
 
 import re
@@ -27,21 +31,22 @@ class CimiResponse(object):
 
     def __init__(self, json):
         self.json = json
-        self._attributes_names = []
+        self._attribute_names = []
         self.extract_and_set_attributes()
 
     def extract_and_set_attributes(self):
         for key, value in list(self.json.items()):
             name = camel_to_snake(key)
             if hasattr(self, name):
-                warnings.warn('Cannot set attribute "{}" because it already exist'.format(name), RuntimeWarning)
+                warnings.warn('Cannot set attribute "{}" because it already '
+                              'exist'.format(name), RuntimeWarning)
             else:
                 setattr(self, name, value)
-                self._attributes_names.append(name)
+                self._attribute_names.append(name)
 
     def __str__(self):
         data = ['{}: {}'.format(attr, truncate_middle(80, str(getattr(self, attr))))
-                for attr in self._attributes_names
+                for attr in self._attribute_names
                 if getattr(self, attr, None) is not None]
         return '{}:\n{}'.format(self.__class__.__name__, '\n'.join(sorted(data)))
 
@@ -62,6 +67,10 @@ class CimiCollection(CimiResource):
     def __init__(self, json, resource_type):
         super(CimiCollection, self).__init__(json)
         self.resource_type = resource_type
+        # Default count of instances in the collection.
+        self.count = 0
+        # Default list of user sessions.
+        self.sessions = []
         self.__lock_iter = Lock()
         self.__lock_list = Lock()
         self.__resources = []
@@ -92,7 +101,9 @@ class CloudEntryPoint(CimiResource):
         self.entry_points = self.extract_entry_points()
 
     def extract_entry_points(self):
-        return {k: v['href'] for k,v in list(self.json.items()) if isinstance(v, dict) and 'href' in v}
+        return {k: v['href']
+                for k, v in list(self.json.items())
+                if isinstance(v, dict) and 'href' in v}
 
 
 App = collections.namedtuple('App', [
@@ -181,4 +192,3 @@ User = collections.namedtuple('User', [
     'timeout',
     'privileged',
 ])
-
