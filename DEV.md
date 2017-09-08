@@ -28,4 +28,4 @@ or for specific version of Python
 tox -e py35
 ```
 
-as defined in the `tox.ini` under `[tox] envlist`.
+as defined in the `api/tox.ini` under `[tox] envlist`.
