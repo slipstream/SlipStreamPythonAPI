@@ -67,10 +67,6 @@ class CimiCollection(CimiResource):
     def __init__(self, json, resource_type):
         super(CimiCollection, self).__init__(json)
         self.resource_type = resource_type
-        # Default count of instances in the collection.
-        self.count = 0
-        # Default list of user sessions.
-        self.sessions = []
         self.__lock_iter = Lock()
         self.__lock_list = Lock()
         self.__resources = []

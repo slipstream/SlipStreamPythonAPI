@@ -3,3 +3,4 @@ requests
 six
 sseclient
 urllib3
+mock

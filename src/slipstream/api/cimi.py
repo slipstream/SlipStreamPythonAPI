@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError
 from .exceptions import SlipStreamError
 from .defaults import DEFAULT_ENDPOINT
 from . import models
-
+from .log import get_logger
 
 CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand',
                         'orderby']
@@ -17,13 +17,15 @@ class CIMI(object):
 
     def __init__(self, http_session, endpoint=DEFAULT_ENDPOINT):
         """
-        :param http_session: requests.Session like object, providing request()
-                             method.
-        :param endpoint: SlipStream base URL
+        :param http_session: Object providing request() method for making HTTP
+                             requests.
+        :type  http_session: requests.Session like object
+        :param endpoint: SlipStream base URL.
         """
         self.http_session = http_session
         self.endpoint = endpoint
         self._cep = None
+        self.log = get_logger('%s.%s' % (__name__, self.__class__.__name__))
 
     def _get_cloud_entry_point(self):
         cep_json = self._get('cloud-entry-point')
@@ -76,14 +78,15 @@ class CIMI(object):
         return resource_id
 
     def _request(self, method, resource, params=None, json=None, data=None,
-                 stream=False):
+                 stream=False, retry=False):
         response = self.http_session.request(
             method, '{}/{}/{}'.format(self.endpoint, 'api', resource),
             headers={'Accept': 'application/json'},
             params=params,
             json=json,
             data=data,
-            stream=stream)
+            stream=stream,
+            retry=retry)
 
         self._check_response_status(response)
 
@@ -109,131 +112,144 @@ class CIMI(object):
             raise SlipStreamError(message, response)
 
     def _get(self, resource_id=None, resource_type=None, params=None,
-             stream=False):
+             stream=False, retry=False):
         uri = self._get_uri(resource_id, resource_type)
-        return self._request('GET', uri, params=params, stream=stream)
+        return self._request('GET', uri, params=params, stream=stream,
+                             retry=retry)
 
     def _post(self, resource_id=None, resource_type=None, params=None, json=None,
-              data=None):
+              data=None, retry=False):
         uri = self._get_uri(resource_id, resource_type)
-        return self._request('POST', uri, params=params, json=json, data=data)
+        return self._request('POST', uri, params=params, json=json, data=data,
+                             retry=retry)
 
-    def _put(self, resource_id=None, resource_type=None, params=None,
-             json=None, data=None, stream=False):
+    def _put(self, resource_id=None, resource_type=None, params=None, json=None,
+             data=None, stream=False, retry=False):
         uri = self._get_uri(resource_id, resource_type)
         return self._request('PUT', uri, params=params, json=json, data=data,
-                             stream=stream)
+                             stream=stream, retry=retry)
 
-    def _delete(self, resource_id=None):
-        return self._request('DELETE', resource_id)
+    def _delete(self, resource_id=None, retry=False):
+        return self._request('DELETE', resource_id, retry=retry)
 
-    def get(self, resource_id, stream=False):
-        """ Retreive a CIMI resource by it's resource id
+    def get(self, resource_id, stream=False, retry=False):
+        """ Retrieve a CIMI resource by it's resource id
 
-        :param      resource_id: The id of the resource to retrieve
-        :type       resource_id: str
+        :param   resource_id: The id of the resource to retrieve
+        :type    resource_id: str
 
-        :param      stream: Requests SSE
-        :type       stream: bool
+        :param   stream: Requests SSE
+        :type    stream: bool
 
-        :return:    A CimiResource object corresponding to the resource
+        :return: CimiResource object corresponding to the resource
         """
-        resp_json = self._get(resource_id=resource_id, stream=stream)
-        return models.CimiResource(resp_json)
+        resp_json = self._get(resource_id=resource_id, stream=stream,
+                              retry=retry)
+        if stream:
+            return resp_json
+        else:
+            return models.CimiResource(resp_json)
 
-    def edit(self, resource_id, data):
+    def edit(self, resource_id, data, retry=False):
         """ Edit a CIMI resource by it's resource id
 
-        :param      resource_id: The id of the resource to edit
-        :type       resource_id: str
+        :param   resource_id: The id of the resource to edit
+        :type    resource_id: str
 
-        :param      data: The data to serialize into JSON
-        :type       data: dict
+        :param   data: The data to serialize into JSON
+        :type    data: dict
 
-        :return:    A CimiResponse object which should contain the attributes
-                    'status', 'resource-id' and 'message'
-        :rtype:     CimiResponse
+        :return: CimiResponse object which should contain the attributes
+                 'status', 'resource-id' and 'message'
+        :rtype:  CimiResponse
         """
         resource = self.get(resource_id=resource_id)
         operation_href = self._find_operation_href(resource, 'edit')
         return models.CimiResponse(self._put(resource_id=operation_href,
-                                             json=data))
+                                             json=data, retry=retry))
 
-    def delete(self, resource_id):
+    def delete(self, resource_id, retry=False):
         """ Delete a CIMI resource by it's resource id
 
-        :param  resource_id: The id of the resource to delete
-        :type   resource_id: str
+        :param   resource_id: The id of the resource to delete
+        :type    resource_id: str
 
-        :return:    A CimiResponse object which should contain the attributes
-                    'status', 'resource-id' and 'message'
-        :rtype:     CimiResponse
-
+        :return: CimiResponse object which should contain the attributes
+                 'status', 'resource-id' and 'message'
+        :rtype:  CimiResponse
         """
         resource = self.get(resource_id=resource_id)
         operation_href = self._find_operation_href(resource, 'delete')
-        return models.CimiResponse(self._delete(resource_id=operation_href))
+        return models.CimiResponse(self._delete(resource_id=operation_href,
+                                                retry=retry))
 
     # TODO: SSE
-    def add(self, resource_type, data):
+    def add(self, resource_type, data, retry=False):
         """ Add a CIMI resource to the specified resource_type (Collection)
 
-        :param      resource_type: Type of the resource (Collection name)
-        :type       resource_type: str
+        :param   resource_type: Type of the resource (Collection name)
+        :type    resource_type: str
 
-        :param      data: The data to serialize into JSON
-        :type       data: dict
+        :param   data: The data to serialize into JSON
+        :type    data: dict
 
-        :return:    A CimiResponse object which should contain the attributes
-                    'status', 'resource-id' and 'message'
-        :rtype:     CimiResponse
+        :return: CimiResponse object which should contain the attributes
+                 'status', 'resource-id' and 'message'
+        :rtype:  CimiResponse
         """
         collection = self.search(resource_type=resource_type, last=0)
         operation_href = self._find_operation_href(collection, 'add')
-        return models.CimiResponse(self._post(resource_id=operation_href, json=data))
+        return models.CimiResponse(self._post(resource_id=operation_href,
+                                              json=data, retry=retry))
 
     # TODO: SSE
-    def search(self, resource_type, **kwargs):
+    def search(self, resource_type, retry=False, **kwargs):
         """ Search for CIMI resources of the given type (Collection).
 
-        :param      resource_type: Type of the resource (Collection name)
-        :type       resource_type: str
+        :param   resource_type: Type of the resource (Collection name)
+        :type    resource_type: str
 
-        :param      stream: Requests SSE
-        :type       stream: bool
+        :param   retry: Retry HTTP calls
+        :type    retry: bool
 
-        :keyword    first: Start from the 'first' element (1-based)
-        :type       first: int
+        :param   stream: Requests SSE
+        :type    stream: bool
 
-        :keyword    last: Stop at the 'last' element (1-based)
-        :type       last: int
+        :keyword first: Start from the 'first' element (1-based)
+        :type    first: int
 
-        :keyword    filter: CIMI filter
-        :type       filter: str
+        :keyword last: Stop at the 'last' element (1-based)
+        :type    last: int
 
-        :keyword    select: Select attributes to return. (resourceURI always
-                            returned)
-        :type       select: str or list of str
+        :keyword filter: CIMI filter
+        :type    filter: str
 
-        :keyword    expand: Expand linked resources (not implemented yet)
-        :type       expand: str or list of str
+        :keyword select: Select attributes to return. (resourceURI always
+                         returned)
+        :type    select: str or list of str
 
-        :keyword    orderby: Sort by the specified attribute
-        :type       orderby: str or list of str
+        :keyword expand: Expand linked resources (not implemented yet)
+        :type    expand: str or list of str
 
-        :return:    A CimiCollection object with the list of found resources
-                    available as a generator with the method 'resources()' or
-                    with the attribute 'resources_list'.
-        :rtype:     CimiCollection
+        :keyword orderby: Sort by the specified attribute
+        :type    orderby: str or list of str
+
+        :return: CimiCollection object with the list of found resources
+                 available as a generator with the method 'resources()' or
+                 with the attribute 'resources_list'.
+        :rtype:  CimiCollection
         """
         stream = kwargs.get('stream', False)
         cimi_params, query_params = self._split_params(kwargs)
-        resp_json = self._put(resource_type=resource_type, data=cimi_params,
-                              params=query_params, stream=stream)
-        return models.CimiCollection(resp_json, resource_type)
+        resp_json = self._put(resource_type=resource_type, params=query_params,
+                              data=cimi_params, stream=stream, retry=retry)
+        if stream:
+            return resp_json
+        else:
+            return models.CimiCollection(resp_json, resource_type)
 
     def login(self, login_params):
-        """Uses the given login_params to log into the SlipStream server. The
+        """Uses given login_params to log into the SlipStream server. The
         login_params must be a map containing an "href" element giving the id of
         the sessionTemplate resource and any other attributes required for the
         login method. E.g.:
@@ -243,7 +259,7 @@ class CIMI(object):
         Returns models.CimiResponse. Successful responses will contain a status
         code of 201 and the resource-id of the session.
 
-        :param login_params: {}
+        :param   login_params: {"href": "session-template/...", <creds>}
         :return: models.CimiResponse
         """
         return models.CimiResponse(
