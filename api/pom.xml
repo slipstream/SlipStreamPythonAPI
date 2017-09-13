@@ -54,6 +54,40 @@
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+
+        <executions>
+          <execution>
+            <id>copy-files</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/dist-bundle</outputDirectory>
+              <overwrite>true</overwrite>
+              <resources>
+                <resource>
+                  <directory>src/</directory>
+                  <filtering>true</filtering>
+                </resource>
+                <resource>
+                  <directory>./</directory>
+                  <includes>
+                    <include>setup.py</include>
+                  </includes>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -75,14 +109,9 @@
 
         </executions>
       </plugin>
+
     </plugins>
   </build>
-  <scm>
-    <connection>${scm.read}/SlipStreamPythonAPI.git</connection>
-    <developerConnection>${scm.write}/SlipStreamPythonAPI.git</developerConnection>
-    <url>${scm.public}/SlipStreamPythonAPI</url>
-    <tag>HEAD</tag>
-  </scm>
 
 </project>
 
