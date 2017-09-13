@@ -4,14 +4,13 @@
 
   <artifactId>SlipStreamPythonAPI-tarball</artifactId>
   <packaging>pom</packaging>
-  <version>3.36-SNAPSHOT</version>
   <name>SlipStreamPythonAPI Tarball</name>
   <url>http://sixsq.com</url>
 
   <parent>
     <groupId>com.sixsq.slipstream</groupId>
-    <artifactId>SlipStreamClientAPI</artifactId>
-    <version>3.36-SNAPSHOT</version>
+    <artifactId>SlipStreamPythonAPI</artifactId>
+    <version>3.37-SNAPSHOT</version>
   </parent>
 
   <licenses>
@@ -43,14 +42,6 @@
                 <phase>test</phase>
                 <configuration>
                   <executable>tox</executable>
-                  <!--
-                  <environmentVariables>
-                    <PYTHONPATH>./target/test/python/:./target/main/python/:./src/external/mock/:./src/external/:./src/main/scripts/:./target/dependencies</PYTHONPATH>
-                  </environmentVariables>
-                  <arguments>
-                    <argument>-e py27</argument>
-                  </arguments>
-                  -->
                 </configuration>
               </execution>
             </executions>
