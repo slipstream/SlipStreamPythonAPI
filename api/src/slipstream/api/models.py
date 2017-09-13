@@ -176,5 +176,4 @@ User = collections.namedtuple('User', UserItem._fields + (
     'ssh_public_keys',
     'keep_running',
     'timeout',
-    'privileged',
 ))
