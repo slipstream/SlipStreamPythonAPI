@@ -155,15 +155,22 @@ Module = collections.namedtuple('Module', [
     'path',
 ])
 
-User = collections.namedtuple('User', [
+UserItem = collections.namedtuple('UserItem', [
     'username',
-    'cyclone_login',
-    'github_login',
     'email',
     'first_name',
     'last_name',
     'organization',
     'roles',
+    'privileged',
+    'active_since',
+    'last_online',
+    'online',
+])
+
+User = collections.namedtuple('User', UserItem._fields + (
+    'cyclone_login',
+    'github_login',
     'configured_clouds',
     'default_cloud',
     'ssh_public_keys',
