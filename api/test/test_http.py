@@ -1,6 +1,10 @@
+import pytest
 from mock import Mock
 from slipstream.api.http import set_stream_header, HEADER_SSE, \
-    is_streamed_response, SessionStore
+    is_streamed_response, SessionStore, HTTP_TIMEOUTS, HTTP_CONNECT_TIMEOUT, \
+    HTTP_READ_TIMEOUT_SSE, HTTP_TIMEOUTS_SSE
+
+pytestmark = pytest.mark.local
 
 
 def test_set_stream_header():
@@ -44,3 +48,38 @@ def test_is_streamed_response():
 
     response.request.headers = {'foo': 'bar', 'Accept': 'a/b, ' + HEADER_SSE}
     assert True is is_streamed_response(response)
+
+
+def test_update_request_params():
+    params = {}
+    SessionStore._update_request_params(params)
+    assert 'timeout' in params
+    assert params['timeout'] == HTTP_TIMEOUTS
+
+    params = {'foo': 'bar'}
+    SessionStore._update_request_params(params)
+    assert 'foo' in params
+    assert 'timeout' in params
+    assert params['timeout'] == HTTP_TIMEOUTS
+
+    params = {'timeout': (1., 1.)}
+    SessionStore._update_request_params(params)
+    assert 'timeout' in params
+    assert params['timeout'] == (1., 1.)
+
+    # Anything other than a tuple or list is treated as read timeout.
+    for rt in ['1.', 1.]:
+        params = {'timeout': rt}
+        SessionStore._update_request_params(params)
+        assert 'timeout' in params
+        assert params['timeout'] == (HTTP_CONNECT_TIMEOUT, float(rt))
+
+    params = {'timeout': 1., 'stream': True}
+    SessionStore._update_request_params(params)
+    assert 'timeout' in params
+    assert params['timeout'] == (HTTP_CONNECT_TIMEOUT, HTTP_READ_TIMEOUT_SSE)
+
+    params = {'stream': True}
+    SessionStore._update_request_params(params)
+    assert 'timeout' in params
+    assert params['timeout'] == HTTP_TIMEOUTS_SSE

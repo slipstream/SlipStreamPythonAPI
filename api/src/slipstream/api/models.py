@@ -4,27 +4,11 @@ Objects representing different SlipStream resources.
 
 from __future__ import unicode_literals
 
-import re
 import warnings
 import collections
-
 from threading import Lock
 
-
-first_cap_re = re.compile('(.)([A-Z][a-z]+)')
-all_cap_re = re.compile('([a-z0-9])([A-Z])')
-
-
-def camel_to_snake(name):
-    s1 = first_cap_re.sub(r'\1_\2', name)
-    return all_cap_re.sub(r'\1_\2', s1).lower()
-
-
-def truncate_middle(max_len, message, truncate_message='...'):
-    if message and max_len and len(message) > max_len:
-        subsize = int((max_len - len(truncate_message)) / 2)
-        message = message[0:subsize] + truncate_message + message[-subsize:]
-    return message
+from .utils import truncate_middle
 
 
 class CimiResponse(object):
@@ -35,14 +19,13 @@ class CimiResponse(object):
         self.extract_and_set_attributes()
 
     def extract_and_set_attributes(self):
-        for key, value in list(self.json.items()):
-            name = camel_to_snake(key)
-            if hasattr(self, name):
+        for key, value in self.json.items():
+            if hasattr(self, key):
                 warnings.warn('Cannot set attribute "{}" because it already '
-                              'exist'.format(name), RuntimeWarning)
+                              'exists'.format(key), RuntimeWarning)
             else:
-                setattr(self, name, value)
-                self._attribute_names.append(name)
+                setattr(self, key, value)
+                self._attribute_names.append(key)
 
     def __str__(self):
         data = ['{}: {}'.format(attr, truncate_middle(80, str(getattr(self, attr))))

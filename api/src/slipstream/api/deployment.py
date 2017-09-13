@@ -2,7 +2,7 @@
 Deployment resource.
 """
 
-RESOURCE_TYPE = 'deployments'
+RESOURCE_TYPE = 'deployment'
 PARAMETER_SEPAR = '_'
 PARAMETER_RESOURCE = 'deployment-parameter'
 
@@ -14,14 +14,23 @@ def to_param_id(deployment_id, component, index, name):
 
 class Deployment(object):
 
-    def __init__(self, client, deployment_id):
+    def __init__(self, cimi, id):
         """
-        :param client: authenticated client implementing CIMI over HTTP CRUD.
+        :param cimi: authenticated client implementing CIMI over HTTP CRUD.
         """
-        self.client = client
-        self.deployment_id = deployment_id
+        self.cimi = cimi
+        self.id = id
 
-    def get_deployment_parameter(self, component, name, index=None, stream=False):
+    def state(self, stream=False):
+        res = self.cimi.get(PARAMETER_RESOURCE + '/' + self.id +
+                            PARAMETER_SEPAR + 'state',
+                            stream=stream)
+        if stream:
+            return res
+        else:
+            return res.get('value')
+
+    def get_deployment_parameter(self, component, index, name, stream=False):
         """When `index` is provided, returns value (as `models.CimiResource`)
         of the requested deployment parameter `name` of the specified `component`.
         Otherwise, returns all currently active `component`s (as
@@ -30,17 +39,29 @@ class Deployment(object):
         Set `stream` to `True` to active SSE.
 
         :param   component: Component name
-        :param   name: Parameter name
         :param   index: Index of component instance
+        :param   name: Parameter name
         :param   stream: Use SSE
-        :return: `models.CimiResource` or `models.CimiCollection`, or generator
-                 of `models.CimiResource`
+        :return: deployment parameter value or generator, if `stream` is True
+        :rtype:  str or generator
         """
         if index:
-            param_id = to_param_id(self.deployment_id, component, index, name)
-            return self.client.get(param_id, stream=stream)
-        else:
-            return self.client.search(RESOURCE_TYPE, stream=stream)
+            param_id = to_param_id(self.id, component, index, name)
+            res = self.cimi.get(param_id, stream=stream)
+            if stream:
+                return res
+            else:
+                return res.get('value')
+
+    def get_deployment_parameters(self, component, name, retry=False,
+                                  stream=False):
+        # FIXME: add "ACTIVE node instance" filter
+        _filter = 'node-name="{}" and ' \
+                  'name="{}" and ' \
+                  'deployment-href="{}/{}"'.format(component, name,
+                                                   RESOURCE_TYPE, self.id)
+        return self.cimi.search(RESOURCE_TYPE, filter=_filter,
+                                retry=retry, stream=stream)
 
     def set_deployment_parameter(self, component, index, name, value):
         """Sets `value` on deployment parameter `name` of the `component`
@@ -52,8 +73,8 @@ class Deployment(object):
         :param   value: Value to set
         :return:
         """
-        param_id = to_param_id(self.deployment_id, component, index, name)
-        return self.client.edit(param_id, value)
+        param_id = to_param_id(self.id, component, index, name)
+        return self.cimi.edit(param_id, {'value': value})
 
     def get_deployment(self):
         """

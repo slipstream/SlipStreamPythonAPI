@@ -9,6 +9,7 @@ import socket
 import requests
 import logging
 import time
+from sseclient import SSEClient as SSEClientOrig
 from random import random
 from threading import Lock
 
@@ -16,7 +17,6 @@ from requests.cookies import MockRequest
 from six.moves.urllib.parse import urlparse
 from six.moves.http_cookiejar import MozillaCookieJar
 from six.moves.http_client import HTTPConnection, BadStatusLine, HTTPException
-import sseclient
 
 from .defaults import DEFAULT_COOKIE_FILE
 from .exceptions import AbortException, \
@@ -25,9 +25,11 @@ from .exceptions import AbortException, \
 from .log import get_logger
 
 HEADER_SSE = 'text/event-stream'
-HTTP_CONNECT_TIMEOUT = 0.1
-HTTP_READ_TIMEOUT = 5.0
+HTTP_CONNECT_TIMEOUT = 5.0
+HTTP_READ_TIMEOUT = 10.0
+HTTP_READ_TIMEOUT_SSE = 20.0
 HTTP_TIMEOUTS = (HTTP_CONNECT_TIMEOUT, HTTP_READ_TIMEOUT)
+HTTP_TIMEOUTS_SSE = (HTTP_CONNECT_TIMEOUT, HTTP_READ_TIMEOUT_SSE)
 
 # Client Errors
 NOT_FOUND_ERROR = 404
@@ -91,6 +93,19 @@ def is_streamed_response(resp):
         return False
 
 
+class SSEClient(SSEClientOrig):
+    """Wrapper to allow for `with` statement."""
+
+    def __init__(self, event_source, char_enc='utf-8'):
+        super(SSEClient, self).__init__(event_source, char_enc)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 class SessionStore(requests.Session):
     """A ``requests.Session`` subclass implementing a file-based session store.
     """
@@ -144,15 +159,19 @@ class SessionStore(requests.Session):
 
     @staticmethod
     def _update_request_params(kwargs):
-        if kwargs.get('stream', False):
+        stream = kwargs.get('stream', False)
+        if stream:
             kwargs['headers'] = set_stream_header(kwargs.get('headers', {}))
 
         if 'timeout' in kwargs:
-            if isinstance(kwargs['timeout'], float):
+            if not isinstance(kwargs['timeout'], (tuple, list)):
                 # Only 'read timeout' is set; prepend 'connect timeout'.
-                kwargs['timeout'] = (HTTP_CONNECT_TIMEOUT, kwargs['timeout'])
+                timeout = (
+                    HTTP_CONNECT_TIMEOUT,
+                    HTTP_READ_TIMEOUT_SSE if stream else float(kwargs['timeout']))
+                kwargs['timeout'] = timeout
         else:
-            kwargs['timeout'] = HTTP_TIMEOUTS
+            kwargs['timeout'] = HTTP_TIMEOUTS_SSE if stream else HTTP_TIMEOUTS
 
     def request(self, method, url, **kwargs):
         """Generic HTTP request expecting HTTP verb and URL.
@@ -188,7 +207,7 @@ class SessionStore(requests.Session):
         for i, e in enumerate(response.events()):
             print json.loads(e.data)
             if i >= 4:
-                stream.close()
+                response.close()
                 break
         """
         self._update_request_params(kwargs)
@@ -203,6 +222,7 @@ class SessionStore(requests.Session):
         first_request_time = time.time()
 
         while True:
+            self.log.debug('Request args: %s', kwargs)
             try:
                 response = self._request(method, url, kwargs)
                 response = self._handle_response(response, kwargs)
@@ -219,6 +239,7 @@ class SessionStore(requests.Session):
                     kwargs['timeout'] = (kwargs['timeout'][0] * 2,
                                          kwargs['timeout'][1] * 2)
                     sleep = 1.
+                    errmsg = str(ex)
                 else:
                     self.log.error('Retry disabled. HTTP call error: %s', ex)
                     raise
@@ -236,6 +257,7 @@ class SessionStore(requests.Session):
                     with self.lock:
                         if self.too_many_requests_count < 11:
                             self.too_many_requests_count += 1
+                    errmsg = str(ex)
                 else:
                     self.log.warning('Retry disabled. HTTP call error: %s', ex)
                     raise
@@ -257,6 +279,7 @@ class SessionStore(requests.Session):
                         raise
                     sleep = min(float(retry_count) * 10.0, float(max_wait_time))
                     retry_count += 1
+                    errmsg = str(ex)
                 else:
                     self.log.error('Retry disabled. HTTP call error: %s', ex)
                     raise
@@ -264,12 +287,13 @@ class SessionStore(requests.Session):
             except requests.exceptions.InvalidSchema as ex:
                 raise ClientError("Malformed URL: %s" % ex)
 
-            except Exception as ex:
-                raise Exception('Failed {} on {} with: {}'.format(method, url,
-                                                                  ex))
+            # except Exception as ex:
+            #     raise Exception('Failed {} on {} with: {}'.format(method, url,
+            #                                                       ex))
 
             sleep += (random() * sleep * 0.2) - (sleep * 0.1)
-            self.log.warning('Error: %s. Retrying in %s seconds.' % (ex, sleep))
+            self.log.warning('Error: %s. Retrying in %s seconds.' % (errmsg,
+                                                                     sleep))
             time.sleep(sleep)
             self.log.warning('Retrying...')
 
@@ -305,7 +329,7 @@ class SessionStore(requests.Session):
                 self._unsecure_cookie(response)
             self.cookies.save(ignore_discard=True)
             if kwargs.get('stream', False):
-                return sseclient.SSEClient(response)
+                return SSEClient(response)
             else:
                 return response
         elif 300 <= status < 400:

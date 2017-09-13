@@ -1,10 +1,17 @@
+from deployment import RESOURCE_TYPE as dpl_resource_type
+
 class Application(object):
-    def __init__(self):
-        pass
+
+    def __init__(self, client, app_id):
+        self.client = client
+        self.app_id = app_id
+
     def get(self, app_uri):
         pass
+
     def define(self, app_uri, definition):
         pass
+
     def deploy(self, app_uri):
         """
 
@@ -27,4 +34,23 @@ class Application(object):
                  (assoc :chan (create-op-url-chan op baseURI)))]
     (http/get url opts)))
         """
-        pass
+        # get app_uri as XML
+        "module/examples/tutorials/service-testing/system/1940"
+        deployment = {
+            "id": "deployment/dfd34916-6ede-47f7-aaeb-a30ddecbba5b",
+            "resourceURI": "http://sixsq.com/slipstream/1/Deployment",
+            "module-resource-uri": app_uri,
+            "category": "Deployment",
+            "type": "Orchestration",
+            "mutable": False,
+            "nodes":
+                {"node1":
+                     {"parameters":
+                          {"cloudservice": {},
+                           "multiplicity": {"default-value": "3"}}},
+                 "node2":
+                     {"parameters":
+                          {"cloudservice": {},
+                           "multiplicity": {"default-value": "1"}}}}
+        }
+        self.client.add(dpl_resource_type, deployment)

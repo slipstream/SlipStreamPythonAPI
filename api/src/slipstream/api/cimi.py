@@ -2,6 +2,7 @@
 Implementation of CIMI protocol from https://www.dmtf.org/standards/cloud.
 """
 
+from threading import Lock
 from requests.exceptions import HTTPError
 from .exceptions import SlipStreamError
 from .defaults import DEFAULT_ENDPOINT
@@ -26,6 +27,7 @@ class CIMI(object):
         self.endpoint = endpoint
         self._cep = None
         self.log = get_logger('%s.%s' % (__name__, self.__class__.__name__))
+        self.lock = Lock()
 
     def _get_cloud_entry_point(self):
         cep_json = self._get('cloud-entry-point')
@@ -79,18 +81,21 @@ class CIMI(object):
 
     def _request(self, method, resource, params=None, json=None, data=None,
                  stream=False, retry=False):
-        response = self.http_session.request(
-            method, '{}/{}/{}'.format(self.endpoint, 'api', resource),
-            headers={'Accept': 'application/json'},
-            params=params,
-            json=json,
-            data=data,
-            stream=stream,
-            retry=retry)
+        with self.lock:
+            response = self.http_session.request(
+                method, '{}/{}/{}'.format(self.endpoint, 'api', resource),
+                headers={'Accept': 'application/json'},
+                params=params,
+                json=json,
+                data=data,
+                stream=stream,
+                retry=retry)
 
-        self._check_response_status(response)
-
-        return response.json()
+        if stream:
+            return response
+        else:
+            self._check_response_status(response)
+            return response.json()
 
     @staticmethod
     def _check_response_status(response):
@@ -143,12 +148,7 @@ class CIMI(object):
 
         :return: CimiResource object corresponding to the resource
         """
-        resp_json = self._get(resource_id=resource_id, stream=stream,
-                              retry=retry)
-        if stream:
-            return resp_json
-        else:
-            return models.CimiResource(resp_json)
+        return self._get(resource_id=resource_id, stream=stream, retry=retry)
 
     def edit(self, resource_id, data, retry=False):
         """ Edit a CIMI resource by it's resource id
@@ -163,10 +163,9 @@ class CIMI(object):
                  'status', 'resource-id' and 'message'
         :rtype:  CimiResponse
         """
-        resource = self.get(resource_id=resource_id)
+        resource = models.CimiResource(self.get(resource_id=resource_id))
         operation_href = self._find_operation_href(resource, 'edit')
-        return models.CimiResponse(self._put(resource_id=operation_href,
-                                             json=data, retry=retry))
+        return self._put(resource_id=operation_href, json=data, retry=retry)
 
     def delete(self, resource_id, retry=False):
         """ Delete a CIMI resource by it's resource id
@@ -178,12 +177,10 @@ class CIMI(object):
                  'status', 'resource-id' and 'message'
         :rtype:  CimiResponse
         """
-        resource = self.get(resource_id=resource_id)
+        resource = models.CimiResource(self.get(resource_id=resource_id))
         operation_href = self._find_operation_href(resource, 'delete')
-        return models.CimiResponse(self._delete(resource_id=operation_href,
-                                                retry=retry))
+        return self._delete(resource_id=operation_href, retry=retry)
 
-    # TODO: SSE
     def add(self, resource_type, data, retry=False):
         """ Add a CIMI resource to the specified resource_type (Collection)
 
@@ -197,12 +194,11 @@ class CIMI(object):
                  'status', 'resource-id' and 'message'
         :rtype:  CimiResponse
         """
-        collection = self.search(resource_type=resource_type, last=0)
+        collection = models.CimiCollection(self.search(
+            resource_type=resource_type, last=0))
         operation_href = self._find_operation_href(collection, 'add')
-        return models.CimiResponse(self._post(resource_id=operation_href,
-                                              json=data, retry=retry))
+        return self._post(resource_id=operation_href, json=data, retry=retry)
 
-    # TODO: SSE
     def search(self, resource_type, retry=False, **kwargs):
         """ Search for CIMI resources of the given type (Collection).
 
@@ -234,44 +230,55 @@ class CIMI(object):
         :keyword orderby: Sort by the specified attribute
         :type    orderby: str or list of str
 
-        :return: CimiCollection object with the list of found resources
-                 available as a generator with the method 'resources()' or
-                 with the attribute 'resources_list'.
-        :rtype:  CimiCollection
+        :return: Dictionary with the list of found resources
+        :rtype:  dict
         """
-        stream = kwargs.get('stream', False)
         cimi_params, query_params = self._split_params(kwargs)
-        resp_json = self._put(resource_type=resource_type, params=query_params,
-                              data=cimi_params, stream=stream, retry=retry)
-        if stream:
-            return resp_json
-        else:
-            return models.CimiCollection(resp_json, resource_type)
+        return self._put(resource_type=resource_type, params=query_params,
+                         data=cimi_params, stream=kwargs.get('stream', False),
+                         retry=retry)
 
     def login(self, login_params):
         """Uses given login_params to log into the SlipStream server. The
         login_params must be a map containing an "href" element giving the id of
         the sessionTemplate resource and any other attributes required for the
         login method. E.g.:
+
         {"href" : "session-template/internal",
          "username" : "username",
          "password" : "password"}
-        Returns models.CimiResponse. Successful responses will contain a status
-        code of 201 and the resource-id of the session.
+
+        Returns server response as dict. Successful responses will contain a
+        `status` code of 201 and the `resource-id` of the created session.
 
         :param   login_params: {"href": "session-template/...", <creds>}
-        :return: models.CimiResponse
+        :type    login_params: dict
+        :return: Server response.
+        :rtype:  dict
         """
-        return models.CimiResponse(
-            self._post(resource_type='sessions',
-                       json={'sessionTemplate': login_params}))
+        return self._post(resource_type='sessions',
+                          json={'sessionTemplate': login_params})
 
     def login_internal(self, username, password):
+        """Wrapper around login() for internal authentication.  For details
+        see login().
+
+        :param username: User login name
+        :param password: User password
+        :return:  see login()
+        """
         return self.login({'href': self.href_login_internal(),
                            'username': username,
                            'password': password})
 
     def login_apikey(self, key, secret):
+        """Wrapper around login() for API key based authentication.  For details
+        see login().
+
+        :param key: API key
+        :param secret: API secret
+        :return: see login()
+        """
         return self.login({'href': self.href_login_apikey(),
                            'key': key,
                            'secret': secret})
@@ -283,12 +290,15 @@ class CIMI(object):
 
     def current_session(self):
         """
-        :return: str - session id
+        :return: str (session id) or None (if session is not available)
         """
-        session = self.search('sessions')
+        resource_type = 'sessions'
+        session = models.CimiCollection(self.search(resource_type),
+                                        resource_type)
         if session and session.count > 0:
-            id = session.sessions[0].get('id')
-            return id
+            return session.sessions[0].get('id')
+        else:
+            return None
 
     def is_authenticated(self):
         return self.current_session() is not None

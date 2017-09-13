@@ -1,4 +1,7 @@
+import pytest
 from slipstream.api.cimi import CIMI
+
+pytestmark = pytest.mark.local
 
 
 def test_split_params():

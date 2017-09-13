@@ -1,5 +1,8 @@
+import pytest
 from slipstream.api.deployment import to_param_id, PARAMETER_RESOURCE, \
     PARAMETER_SEPAR
+
+pytestmark = pytest.mark.local
 
 
 def test_to_param_id():

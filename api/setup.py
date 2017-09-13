@@ -1,26 +1,19 @@
 # -*- coding: utf-8 -*-
-import ast
-import re
 import sys
 
 from setuptools import find_packages, setup
 
-_version_re = re.compile(r'__version__\s+=\s+(.*)')
-
-with open('src/slipstream/api/__init__.py', 'rb') as f:
-    version = str(ast.literal_eval(_version_re.search(
-        f.read().decode('utf-8')).group(1)))
-
-install_requires = [
-    'defusedxml',
-    'requests',
-    'six',
-    'sseclient',
-    'urllib3'
-]
+with open('requirements.txt') as f:
+    install_requires = []
+    for line in f.readlines():
+        if not line.startswith('mock'):
+            install_requires.append(line)
 
 if sys.version_info < (3, 2):
     install_requires.append('configparser')
+
+version = '${project.version}'
+packages = find_packages(where='src/')
 
 setup(
     name='slipstream-api',
@@ -28,17 +21,17 @@ setup(
     author="SixSq Sarl",
     author_email='support@sixsq.com',
     url='http://sixsq.com/slipstream',
-    description="A wrapper to use SlipStream from Python programs.",
+    description="SlipStream client API library in Python.",
     keywords='slipstream devops api',
-    package_dir={'': 'src'},
-    packages=find_packages('src'),
+    package_dir={'slipstream': 'src/slipstream'},
+    packages=packages,
     namespace_packages=['slipstream'],
     zip_safe=False,
     license='Apache License, Version 2.0',
     include_package_data=True,
     install_requires=install_requires,
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Betta',
         'License :: OSI Approved :: Apache Software License',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
@@ -49,6 +42,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Software Development'
     ],
 )

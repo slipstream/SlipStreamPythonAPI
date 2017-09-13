@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>SlipStreamPythonAPI-tarball</artifactId>
+  <packaging>pom</packaging>
+  <version>3.36-SNAPSHOT</version>
+  <name>SlipStreamPythonAPI Tarball</name>
+  <url>http://sixsq.com</url>
+
+  <parent>
+    <groupId>com.sixsq.slipstream</groupId>
+    <artifactId>SlipStreamClientAPI</artifactId>
+    <version>3.36-SNAPSHOT</version>
+  </parent>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <profiles>
+    <profile>
+      <id>unit-testing</id>
+      <activation>
+        <property>
+          <name>!skipTests</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>unittests</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>test</phase>
+                <configuration>
+                  <executable>tox</executable>
+                  <!--
+                  <environmentVariables>
+                    <PYTHONPATH>./target/test/python/:./target/main/python/:./src/external/mock/:./src/external/:./src/main/scripts/:./target/dependencies</PYTHONPATH>
+                  </environmentVariables>
+                  <arguments>
+                    <argument>-e py27</argument>
+                  </arguments>
+                  -->
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptors>
+            <descriptor>bundle.xml</descriptor>
+          </descriptors>
+        </configuration>
+
+        <executions>
+
+          <execution>
+            <id>bundle</id>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <scm>
+    <connection>${scm.read}/SlipStreamPythonAPI.git</connection>
+    <developerConnection>${scm.write}/SlipStreamPythonAPI.git</developerConnection>
+    <url>${scm.public}/SlipStreamPythonAPI</url>
+    <tag>HEAD</tag>
+  </scm>
+
+</project>
+

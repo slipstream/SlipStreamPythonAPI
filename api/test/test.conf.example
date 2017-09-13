@@ -1,0 +1,10 @@
+[authn]
+# method = api-key
+# key =
+# secret =
+method = internal
+username =
+password =
+endpoint = https://nuv.la
+insecure = False
+log_level = INFO

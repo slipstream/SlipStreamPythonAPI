@@ -22,6 +22,25 @@
     </license>
   </licenses>
 
+  <modules>
+    <module>api</module>
+    <module>pypi</module>
+  </modules>
+
+  <profiles>
+    <profile>
+      <id>build-client-rpm</id>
+      <activation>
+        <file>
+          <exists>/usr/local/bin/rpmbuild</exists>
+        </file>
+      </activation>
+      <modules>
+        <module>rpm</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <scm>
     <connection>${scm.read}/SlipStreamPythonAPI.git</connection>
     <developerConnection>${scm.write}/SlipStreamPythonAPI.git</developerConnection>
