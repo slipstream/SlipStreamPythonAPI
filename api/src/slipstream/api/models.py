@@ -177,4 +177,4 @@ User = collections.namedtuple('User', UserItem._fields + (
     'keep_running',
     'timeout',
     'privileged',
-])
+))
