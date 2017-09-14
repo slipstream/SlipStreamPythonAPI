@@ -6,6 +6,28 @@ RESOURCE_TYPE = 'deployment'
 PARAMETER_SEPAR = '_'
 PARAMETER_RESOURCE = 'deployment-parameter'
 
+DEPLOYMENT_STATES = ('Initializing',
+                     'Provisioning',
+                     'Executing',
+                     'SendingReports',
+                     'Ready',
+                     'Finalizing',
+                     'Done',
+                     'Cancelled',
+                     'Aborted')
+
+FINAL_STATES = ('Done',
+                'Cancelled',
+                'Aborted')
+
+
+def deployment_url_to_uuid(run_url):
+    return run_url.rsplit('/', 1)[-1]
+
+
+def deployment_states_after(state):
+    return DEPLOYMENT_STATES[DEPLOYMENT_STATES.index(state) + 1:]
+
 
 def to_param_id(deployment_id, component, index, name):
     param = PARAMETER_SEPAR.join([deployment_id, component, str(index), name])
