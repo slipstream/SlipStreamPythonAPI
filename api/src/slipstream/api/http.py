@@ -19,9 +19,8 @@ from six.moves.http_cookiejar import MozillaCookieJar
 from six.moves.http_client import HTTPConnection, BadStatusLine, HTTPException
 
 from .defaults import DEFAULT_COOKIE_FILE
-from .exceptions import AbortException, \
-    NotYetSetException, TerminalStateException, TooManyRequestsError, \
-    NotFoundError, ServiceUnavailableError, ServerError, ClientError
+from .exceptions import TooManyRequestsError, ServiceUnavailableError, \
+    ServerError, ClientError
 from .log import get_logger
 
 HEADER_SSE = 'text/event-stream'
@@ -225,29 +224,32 @@ class SessionStore(requests.Session):
             self.log.debug('Request args: %s', kwargs)
             try:
                 response = self._request(method, url, kwargs)
-                response = self._handle_response(response, kwargs)
+                response = self._handle_response(response,
+                                                 kwargs.get('stream', False))
                 with self.lock:
                     if self.too_many_requests_count > 0:
                         self.too_many_requests_count -= 1
                 return response
 
-            except requests.exceptions.Timeout as ex:
-                # Retry w/o timeout on HTTP connect and read timeouts.
-                # requests.exceptions.Timeout - server might be overloaded.
-                self.log.warning('HTTP request timed out.')
+            except (requests.exceptions.ConnectTimeout,
+                    requests.exceptions.ReadTimeout) as ex:
+                # Retry (if enabled) w/o timeout on HTTP connect and read
+                # timeouts.
+                # Server might be overloaded.
+                self.log.debug('HTTP request timed out.')
                 if retry:
                     kwargs['timeout'] = (kwargs['timeout'][0] * 2,
                                          kwargs['timeout'][1] * 2)
                     sleep = 1.
                     errmsg = str(ex)
                 else:
-                    self.log.error('Retry disabled. HTTP call error: %s', ex)
+                    self.log.debug('Retry disabled. HTTP call error: %s', ex)
                     raise
 
             except (TooManyRequestsError,
                     ServiceUnavailableError) as ex:
-                # Retry w/o timeout on the server side errors that highly
-                # likely to go away soon.
+                # Retry (if enabled) w/o timeout on the server side errors that
+                # highly likely to go away soon.
                 # TooManyRequestsError - server side back-pressure
                 # ServiceUnavailableError - server in maintenance mode
                 if retry:
@@ -259,7 +261,7 @@ class SessionStore(requests.Session):
                             self.too_many_requests_count += 1
                     errmsg = str(ex)
                 else:
-                    self.log.warning('Retry disabled. HTTP call error: %s', ex)
+                    self.log.debug('Retry disabled. HTTP call error: %s', ex)
                     raise
 
             except (socket.error,
@@ -267,35 +269,31 @@ class SessionStore(requests.Session):
                     ServerError,
                     BadStatusLine,
                     HTTPException) as ex:
-                # Retry w/ timeout.
+                # Retry (if enabled) w/ timeout.
                 # socket.error - host is down
                 # requests.exceptions.ConnectionError - API gateway is not
                 #                                       running
                 # ServerError - application behind API gateway is not running
                 if retry:
                     if (time.time() - first_request_time) >= retry_until:
-                        self.log.error('Timed out retrying. HTTP call error: '
+                        self.log.debug('Timed out retrying. HTTP call error: '
                                        '%s', ex)
                         raise
                     sleep = min(float(retry_count) * 10.0, float(max_wait_time))
                     retry_count += 1
                     errmsg = str(ex)
                 else:
-                    self.log.error('Retry disabled. HTTP call error: %s', ex)
+                    self.log.debug('Retry disabled. HTTP call error: %s', ex)
                     raise
 
             except requests.exceptions.InvalidSchema as ex:
                 raise ClientError("Malformed URL: %s" % ex)
 
-            # except Exception as ex:
-            #     raise Exception('Failed {} on {} with: {}'.format(method, url,
-            #                                                       ex))
-
             sleep += (random() * sleep * 0.2) - (sleep * 0.1)
-            self.log.warning('Error: %s. Retrying in %s seconds.' % (errmsg,
+            self.log.debug('Error: %s. Retrying in %s seconds.' % (errmsg,
                                                                      sleep))
             time.sleep(sleep)
-            self.log.warning('Retrying...')
+            self.log.debug('Retrying...')
 
     def _request(self, method, url, kwargs):
         """Returns successful or unsuccessful response.  Throws on timeouts
@@ -313,12 +311,16 @@ class SessionStore(requests.Session):
         except BadStatusLine:
             raise BadStatusLine("Error: BadStatusLine contacting: %s" % url)
 
-    def _handle_response(self, response, kwargs):
-        """Returns handled response
+    def _handle_response(self, response, is_stream):
+        """Returns handled response or raises.  The only exceptions that are
+        raised are the ones that are caught in the request().
 
-        :param response:
-        :param kwargs:
-        :return:
+        :param   response: HTTP response
+        :type    response: requests.models.Respose
+        :param   is_stream: Was this a streamed request or not
+        :type    is_stream: bool
+        :return: unmodified response
+        :rtype:  requests.models.Respose
         """
         self._log_response(response)
 
@@ -328,18 +330,18 @@ class SessionStore(requests.Session):
             if not self.verify and response.cookies:
                 self._unsecure_cookie(response)
             self.cookies.save(ignore_discard=True)
-            if kwargs.get('stream', False):
+            if is_stream:
                 return SSEClient(response)
             else:
                 return response
         elif 300 <= status < 400:
-            self._handle3xx(response)
+            return self._handle3xx(response)
         elif 400 <= status < 500:
-            self._handle4xx(response)
+            return self._handle4xx(response)
         elif 500 <= status < 600:
-            self._handle5xx(response)
-        else:
-            raise ServerError('Unknown HTTP return code: %s' % status)
+            return self._handle5xx(response)
+
+        return response
 
     @staticmethod
     def _handle3xx(resp):
@@ -349,40 +351,15 @@ class SessionStore(requests.Session):
     @staticmethod
     def _handle4xx(resp):
         status = resp.status_code
-        if status == CONFLICT_ERROR:
-            raise AbortException(resp.text)
-        if status == PRECONDITION_FAILED_ERROR:
-            raise NotYetSetException(resp.text)
-        if status == EXPECTATION_FAILED_ERROR:
-            raise TerminalStateException(resp.text)
         if status == TOO_MANY_REQUESTS_ERROR:
             raise TooManyRequestsError("Too Many Requests")
-
-        if status == NOT_FOUND_ERROR:
-            clientEx = NotFoundError(resp.reason)
-        else:
-            url = resp.url
-            method = resp.request.method
-            detail = resp.text
-            detail = detail and detail or (
-                "%s (%d)" % (resp.reason, status))
-            msg = "Failed calling method %s on url %s, with reason: %s" % (
-                method, url, detail)
-            clientEx = ClientError(msg)
-
-        clientEx.code = status
-        raise clientEx
+        return resp
 
     @staticmethod
     def _handle5xx(resp):
         if resp.status_code == SERVICE_UNAVAILABLE_ERROR:
             raise ServiceUnavailableError("SlipStream is in maintenance.")
-        else:
-            url = resp.url
-            method = resp.request.method
-            raise ServerError(
-                "Failed calling method %s on url %s, with reason: %d: %s"
-                % (method, url, resp.status_code, resp.reason))
+        return resp
 
     def _unsecure_cookie(self, response):
         url = urlparse(response.url)

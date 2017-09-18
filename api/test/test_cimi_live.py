@@ -12,7 +12,7 @@ def teardown_function():
 
 
 @pytest.mark.live
-def test_login_logout_internal():
+def test_login_logout_internal_lifecycle():
     cimi = fixtures.get_cimi(no_login=True)
     login_params = fixtures.get_login_params()
     login_internal = login_params and login_params['href'].endswith('internal')

@@ -11,6 +11,9 @@ class SlipStreamError(Exception):
         self.reason = reason
         self.response = response
 
+    def __str__(self):
+        return self.reason
+
 
 class ServerError(Exception):
     def __init__(self, *args):
@@ -28,10 +31,6 @@ class VolumeError(CloudError):
     pass
 
 
-class NetworkError(ServerError):
-    pass
-
-
 class SecurityError(ServerError):
     pass
 
@@ -45,12 +44,13 @@ class ServiceUnavailableError(ServerError):
 
 
 class ClientError(Exception):
-    def __init__(self, arg, code=None):
-        self.arg = arg
-        self.code = code
+    def __init__(self, reason, response=None):
+        super(ClientError, self).__init__(reason)
+        self.reason = reason
+        self.response = response
 
     def __str__(self):
-        return self.arg
+        return self.reason
 
 
 class AbortException(ClientError):

@@ -2,6 +2,7 @@
 Implementation of CIMI protocol from https://www.dmtf.org/standards/cloud.
 """
 
+import re
 from threading import Lock
 from requests.exceptions import HTTPError
 from .exceptions import SlipStreamError
@@ -12,31 +13,35 @@ from .log import get_logger
 CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand',
                         'orderby']
 
+CLOUD_ENTRY_POINT_RESOURCE = 'api/cloud-entry-point'
+
 
 class CIMI(object):
     """Implementation of CIMI protocol."""
 
-    def __init__(self, http_session, endpoint=DEFAULT_ENDPOINT):
+    def __init__(self, session, endpoint=DEFAULT_ENDPOINT):
         """
         :param http_session: Object providing request() method for making HTTP
                              requests.
         :type  http_session: requests.Session like object
         :param endpoint: SlipStream base URL.
         """
-        self.http_session = http_session
+        self.session = session
         self.endpoint = endpoint
         self._cep = None
         self.log = get_logger('%s.%s' % (__name__, self.__class__.__name__))
         self.lock = Lock()
 
     def _get_cloud_entry_point(self):
-        cep_json = self._get('cloud-entry-point')
-        return models.CloudEntryPoint(cep_json)
+        url = '{}/{}'.format(self.endpoint, CLOUD_ENTRY_POINT_RESOURCE)
+        self.log.debug('Get cloud entry proint on: {}'.format(url))
+        return self._get(url)
 
     @property
     def cloud_entry_point(self):
         """Cloud entry point.
-        :return: models.CloudEntryPoint
+        :return: Cloud entry point as map.
+        :rtype: dict
         """
         if self._cep is None:
             self._cep = self._get_cloud_entry_point()
@@ -63,6 +68,21 @@ class CIMI(object):
 
         return operation_href
 
+    def _cep_get_resource_entry_point(self, resource_type):
+        """Obtain entry point for a resource of the type `resource_type`.
+        """
+        return self.cloud_entry_point[resource_type]['href']
+
+    def _get_base_uri(self):
+        return self.cloud_entry_point['baseURI']
+
+    def _to_url(self, url_or_id):
+        if re.match('((http://)|(https://).*)', url_or_id):
+            return url_or_id
+        else:
+            return '{}/{}'.format(self._get_base_uri().rstrip('/'),
+                                  url_or_id.lstrip('/'))
+
     def _get_uri(self, resource_id=None, resource_type=None):
         if resource_id is None and resource_type is None:
             raise TypeError("You have to specify 'resource_uri' or "
@@ -73,17 +93,18 @@ class CIMI(object):
                             "'resource_type', not both.")
 
         if resource_type is not None:
-            resource_id = self.cloud_entry_point.entry_points.get(resource_type)
+            resource_id = self._cep_get_resource_entry_point(resource_type)
             if resource_id is None:
                 raise KeyError("Resource type '%s' not found." % resource_type)
 
         return resource_id
 
-    def _request(self, method, resource, params=None, json=None, data=None,
+    def _request(self, method, url_or_id, params=None, json=None, data=None,
                  stream=False, retry=False):
+        url = self._to_url(url_or_id)
         with self.lock:
-            response = self.http_session.request(
-                method, '{}/{}/{}'.format(self.endpoint, 'api', resource),
+            response = self.session.request(
+                method, url,
                 headers={'Accept': 'application/json'},
                 params=params,
                 json=json,
@@ -143,6 +164,9 @@ class CIMI(object):
         :param   resource_id: The id of the resource to retrieve
         :type    resource_id: str
 
+        :param   retry: Retry HTTP request on errors
+        :type    retry: bool
+
         :param   stream: Requests SSE
         :type    stream: bool
 
@@ -159,6 +183,9 @@ class CIMI(object):
         :param   data: The data to serialize into JSON
         :type    data: dict
 
+        :param   retry: Retry HTTP request on errors
+        :type    retry: bool
+
         :return: CimiResponse object which should contain the attributes
                  'status', 'resource-id' and 'message'
         :rtype:  CimiResponse
@@ -172,6 +199,9 @@ class CIMI(object):
 
         :param   resource_id: The id of the resource to delete
         :type    resource_id: str
+
+        :param   retry: Retry HTTP request on errors
+        :type    retry: bool
 
         :return: CimiResponse object which should contain the attributes
                  'status', 'resource-id' and 'message'
@@ -190,6 +220,9 @@ class CIMI(object):
         :param   data: The data to serialize into JSON
         :type    data: dict
 
+        :param   retry: Retry HTTP request on errors
+        :type    retry: bool
+
         :return: CimiResponse object which should contain the attributes
                  'status', 'resource-id' and 'message'
         :rtype:  CimiResponse
@@ -205,7 +238,7 @@ class CIMI(object):
         :param   resource_type: Type of the resource (Collection name)
         :type    resource_type: str
 
-        :param   retry: Retry HTTP calls
+        :param   retry: Retry HTTP request on errors
         :type    retry: bool
 
         :param   stream: Requests SSE
@@ -267,9 +300,10 @@ class CIMI(object):
         :param password: User password
         :return:  see login()
         """
-        return self.login({'href': self.href_login_internal(),
-                           'username': username,
-                           'password': password})
+        if not self.is_authenticated():
+            self.login({'href': self.href_login_internal(),
+                        'username': username,
+                        'password': password})
 
     def login_apikey(self, key, secret):
         """Wrapper around login() for API key based authentication.  For details
@@ -304,9 +338,9 @@ class CIMI(object):
         return self.current_session() is not None
 
     def href_login_internal(self):
-        return self.cloud_entry_point.entry_points['sessionTemplates'] + \
+        return self._cep_get_resource_entry_point('sessionTemplates') + \
                '/internal'
 
     def href_login_apikey(self):
-        return self.cloud_entry_point.entry_points['sessionTemplates'] + \
+        return self._cep_get_resource_entry_point('sessionTemplates') + \
                '/api-key'
