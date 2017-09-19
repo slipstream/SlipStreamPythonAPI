@@ -47,6 +47,9 @@ class CIMI(object):
             self._cep = self._get_cloud_entry_point()
         return self._cep
 
+    def _get_base_uri(self):
+        return self.cloud_entry_point['baseURI']
+
     @staticmethod
     def _split_params(params):
         cimi_params = {}
@@ -59,7 +62,7 @@ class CIMI(object):
         return cimi_params, other_params
 
     @staticmethod
-    def _find_operation_href(cimi_resource, operation):
+    def get_operation_href(cimi_resource, operation):
         operation_href = cimi_resource.operations_by_name.get(operation, {}).\
             get('href')
 
@@ -68,13 +71,10 @@ class CIMI(object):
 
         return operation_href
 
-    def _cep_get_resource_entry_point(self, resource_type):
+    def get_resource_href(self, resource_type):
         """Obtain entry point for a resource of the type `resource_type`.
         """
         return self.cloud_entry_point[resource_type]['href']
-
-    def _get_base_uri(self):
-        return self.cloud_entry_point['baseURI']
 
     def _to_url(self, url_or_id):
         if re.match('((http://)|(https://).*)', url_or_id):
@@ -93,9 +93,10 @@ class CIMI(object):
                             "'resource_type', not both.")
 
         if resource_type is not None:
-            resource_id = self._cep_get_resource_entry_point(resource_type)
+            resource_id = self.get_resource_href(resource_type)
             if resource_id is None:
-                raise KeyError("Resource type '%s' not found." % resource_type)
+                raise KeyError("Resource of type '%s' not found." %
+                               resource_type)
 
         return resource_id
 
@@ -191,7 +192,7 @@ class CIMI(object):
         :rtype:  CimiResponse
         """
         resource = models.CimiResource(self.get(resource_id=resource_id))
-        operation_href = self._find_operation_href(resource, 'edit')
+        operation_href = self.get_operation_href(resource, 'edit')
         return self._put(resource_id=operation_href, json=data, retry=retry)
 
     def delete(self, resource_id, retry=False):
@@ -208,7 +209,7 @@ class CIMI(object):
         :rtype:  CimiResponse
         """
         resource = models.CimiResource(self.get(resource_id=resource_id))
-        operation_href = self._find_operation_href(resource, 'delete')
+        operation_href = self.get_operation_href(resource, 'delete')
         return self._delete(resource_id=operation_href, retry=retry)
 
     def add(self, resource_type, data, retry=False):
@@ -229,10 +230,10 @@ class CIMI(object):
         """
         collection = models.CimiCollection(self.search(
             resource_type=resource_type, last=0))
-        operation_href = self._find_operation_href(collection, 'add')
+        operation_href = self.get_operation_href(collection, 'add')
         return self._post(resource_id=operation_href, json=data, retry=retry)
 
-    def search(self, resource_type, retry=False, **kwargs):
+    def search(self, resource_type, retry=False, stream=False, **kwargs):
         """ Search for CIMI resources of the given type (Collection).
 
         :param   resource_type: Type of the resource (Collection name)
@@ -268,8 +269,7 @@ class CIMI(object):
         """
         cimi_params, query_params = self._split_params(kwargs)
         return self._put(resource_type=resource_type, params=query_params,
-                         data=cimi_params, stream=kwargs.get('stream', False),
-                         retry=retry)
+                         data=cimi_params, stream=stream, retry=retry)
 
     def login(self, login_params):
         """Uses given login_params to log into the SlipStream server. The
@@ -338,9 +338,9 @@ class CIMI(object):
         return self.current_session() is not None
 
     def href_login_internal(self):
-        return self._cep_get_resource_entry_point('sessionTemplates') + \
+        return self.get_resource_href('sessionTemplates') + \
                '/internal'
 
     def href_login_apikey(self):
-        return self._cep_get_resource_entry_point('sessionTemplates') + \
+        return self.get_resource_href('sessionTemplates') + \
                '/api-key'

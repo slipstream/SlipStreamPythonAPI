@@ -212,6 +212,10 @@ class SessionStore(requests.Session):
         self._update_request_params(kwargs)
 
         try:
+            stream = kwargs.pop('stream')
+        except KeyError:
+            stream = False
+        try:
             retry = kwargs.pop('retry')
         except KeyError:
             retry = False
@@ -224,8 +228,7 @@ class SessionStore(requests.Session):
             self.log.debug('Request args: %s', kwargs)
             try:
                 response = self._request(method, url, kwargs)
-                response = self._handle_response(response,
-                                                 kwargs.get('stream', False))
+                response = self._handle_response(response, stream)
                 with self.lock:
                     if self.too_many_requests_count > 0:
                         self.too_many_requests_count -= 1
