@@ -229,7 +229,7 @@ class CIMI(object):
         :rtype:  CimiResponse
         """
         collection = models.CimiCollection(self.search(
-            resource_type=resource_type, last=0))
+            resource_type=resource_type, last=0), resource_type)
         operation_href = self.get_operation_href(collection, 'add')
         return self._post(resource_id=operation_href, json=data, retry=retry)
 
