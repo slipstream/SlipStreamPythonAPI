@@ -3,12 +3,17 @@ Deployment resource.
 """
 
 import re
+from .models import CimiResource
 
 DEPLOYMENT_RESOURCE_TYPE = 'deployments'
-TEMPLATE_RESOURCE_TYPE = 'deploymentTemplates'
+DEPLOYMENT_TEMPLATE_RESOURCE_TYPE = 'deploymentTemplates'
 
 PARAMETER_SEPAR = '_'
 PARAMETER_RESOURCE_TYPE = 'deploymentParameters'
+
+deployment_op_delete_name = 'delete'
+deployment_op_start_name = 'http://schemas.dmtf.org/cimi/2/action/start'
+deployment_op_terminate_name = 'http://schemas.dmtf.org/cimi/2/action/terminate'
 
 DEPLOYMENT_STATES = ('Initializing',
                      'Provisioning',
@@ -40,13 +45,30 @@ def is_global_ns(name):
 
 
 class Deployment(object):
-
-    def __init__(self, cimi, id):
+    def __init__(self, cimi, resource_id):
         """
         :param cimi: authenticated client implementing CIMI over HTTP CRUD.
+        :type  cimi: slipstream.api.cimi.CIMI
+        :param resource_id: Deployment URI in the form:
+                            <href of DEPLOYMENT_RESOURCE_TYPE>/<uuid>
+        :type  resource_id: str
         """
         self.cimi = cimi
-        self.id = id
+        self.resource_id = self._ensure_resource_id(resource_id)
+
+    def _ensure_resource_id(self, id):
+        href = self.deployment_href()
+        if not id.startswith(href):
+            return '/'.join([href, id.strip('/')])
+        else:
+            return id
+
+    def _dpl_uuid(self):
+        return self.resource_id.split('/')[-1]
+
+    @property
+    def url(self):
+        return self.cimi.base_uri + self.resource_id
 
     def _resource_href(self, rtype):
         return self.cimi.get_resource_href(rtype)
@@ -57,21 +79,31 @@ class Deployment(object):
     def deployment_href(self):
         return self._resource_href(DEPLOYMENT_RESOURCE_TYPE)
 
-    def to_param_id(self, deployment_id, component, index, name):
-        param = PARAMETER_SEPAR.join([deployment_id, component, str(index), name])
+    def to_param_id(self, component, index, name):
+        param = PARAMETER_SEPAR.join(
+            [self._dpl_uuid(), component, str(index), name])
         return '/'.join([self.param_href(), param])
 
-    def to_global_param_id(self, deployment_id, name):
-        param = PARAMETER_SEPAR.join([deployment_id, name])
+    def to_global_param_id(self, name):
+        param = PARAMETER_SEPAR.join([self._dpl_uuid(), name])
         return '/'.join([self.param_href(), param])
-
-    def to_deployment_id(self, id):
-        return '/'.join([self.deployment_href(), id])
 
     def state(self, retry=False, stream=False):
-        return self.get_deployment_parameter(NodeDecorator.GLOBAL_NS,
-                                             'state', retry=retry,
-                                             stream=stream)
+        return self.get_deployment_parameter_global('state', retry=retry,
+                                                    stream=stream)
+
+    def is_aborted(self, retry=False):
+        p = self.get_deployment_parameter_global('abort', retry=retry)
+        return '' == p.get('value')
+
+    def start(self, dpl_params=None):
+        start_href = self._get_op_href(deployment_op_start_name)
+        return self.cimi._post(start_href, json=dpl_params)
+
+    def _get_op_href(self, op_name):
+        # TODO: to parent class
+        resource = CimiResource(self.cimi.get(self.resource_id))
+        return self.cimi.get_operation_href(resource, op_name)
 
     def get_deployment_parameter(self, comp, name, index=None, retry=False,
                                  stream=False):
@@ -92,21 +124,20 @@ class Deployment(object):
         """
         if index:
             # node.id:name
-            param_id = self.to_param_id(self.id, comp, index, name)
+            param_id = self.to_param_id(comp, index, name)
             return self.cimi.get(param_id, stream=stream, retry=retry)
         elif is_global_ns(comp):
             # ss:name
-            param_id = self.to_global_param_id(self.id, name)
+            param_id = self.to_global_param_id(name)
             return self.cimi.get(param_id, stream=stream, retry=retry)
         elif comp and name:
             # Value of parameter `name` from all `component` instances.
             # node.<active ids>:name
             # FIXME: add "ACTIVE component instance" filter
-            rtype = self.cimi.get_resource_href(DEPLOYMENT_RESOURCE_TYPE)
             _filter = 'node-name="{}" and ' \
                       'name="{}" and ' \
-                      'deployment-href="{}/{}"'.format(comp, name,
-                                                       rtype, self.id)
+                      'deployment/href="{}"'.format(comp, name,
+                                                    self.resource_id)
             res = self.cimi.search(PARAMETER_RESOURCE_TYPE, filter=_filter,
                                    retry=retry, stream=stream)
             # FIXME: take into account paging.
@@ -120,7 +151,19 @@ class Deployment(object):
                                                            index or '',
                                                            name or ''))
 
-    def set_deployment_parameter(self, component, index, name, value):
+    def get_deployment_parameter_global(self, name, retry=False, stream=False):
+        """Returns global parameter.
+
+        :param name: Deployment parameter name from the global namespace
+        :param retry:
+        :param stream:
+        :return:
+        """
+        return self.get_deployment_parameter(NodeDecorator.GLOBAL_NS, name,
+                                             retry=retry, stream=stream)
+
+    def set_deployment_parameter(self, component, index, name, value,
+                                 retry=False):
         """Sets `value` on deployment parameter `name` of the `component`
         instance with `index`.
 
@@ -130,15 +173,43 @@ class Deployment(object):
         :param   value: Value to set
         :return:
         """
-        param_id = self.to_param_id(self.id, component, index, name)
-        return self.cimi.edit(param_id, {'value': value})
+        param_id = self.to_param_id(component, index, name)
+        return self.cimi.edit(param_id, {'value': value}, retry=retry)
+
+    def set_deployment_parameter_global(self, name, value, retry=False):
+        """Sets `value` on global deployment parameter `name` in ss namespace.
+
+        :param   component: Component name
+        :param   index: Index of component instance
+        :param   name: Parameter name
+        :param   value: Value to set
+        :return:
+        """
+        param_id = self.to_global_param_id(name)
+        return self.cimi.edit(param_id, {'value': value}, retry=retry)
+
+    def terminate(self):
+        """Terminates the deployment by stopping and releasing all the cloud
+        resources.
+        :return:
+        """
+        op_href = self._get_op_href(deployment_op_terminate_name)
+        return self.cimi._post(op_href)
+
+    def delete(self):
+        """Deletes the deployment and all the associated resources on
+        SlipStream side.
+        :return:
+        """
+        op_href = self._get_op_href(deployment_op_delete_name)
+        return self.cimi.delete(op_href)
 
     def get_deployment(self):
         """
         TODO: get deployment and then get all its deployment parameters.
         :return:
         """
-        pass
+        return self.cimi.get(self.resource_id)
 
 
 RUN_CATEGORY_IMAGE = 'Image'
@@ -165,7 +236,8 @@ class NodeDecorator(object):
 
     # Orchestrator name
     orchestratorName = 'orchestrator'
-    ORCHESTRATOR_NODENAME_RE = re.compile('^' + orchestratorName + '(-\w[-\w]*)?$')
+    ORCHESTRATOR_NODENAME_RE = re.compile(
+        '^' + orchestratorName + '(-\w[-\w]*)?$')
 
     # Name given to the machine being built for node state
     MACHINE_NAME = 'machine'
@@ -229,4 +301,5 @@ class NodeDecorator(object):
 
     @staticmethod
     def is_orchestrator_name(name):
-        return True if NodeDecorator.ORCHESTRATOR_NODENAME_RE.match(name) else False
+        return True if NodeDecorator.ORCHESTRATOR_NODENAME_RE.match(
+            name) else False

@@ -15,7 +15,7 @@ def test_get_base_uri():
     cimi = CIMI(Mock())
     baseuri = 'http://foo/bar'
     cimi._get_cloud_entry_point = Mock(return_value={'baseURI': baseuri})
-    assert baseuri == cimi._get_base_uri()
+    assert baseuri == cimi.base_uri
 
 
 def test_to_url():

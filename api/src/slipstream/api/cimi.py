@@ -29,12 +29,13 @@ class CIMI(object):
         self.session = session
         self.endpoint = endpoint
         self._cep = None
+        self._base_uri = None
         self.log = get_logger('%s.%s' % (__name__, self.__class__.__name__))
         self.lock = Lock()
 
     def _get_cloud_entry_point(self):
         url = '{}/{}'.format(self.endpoint, CLOUD_ENTRY_POINT_RESOURCE)
-        self.log.debug('Get cloud entry proint on: {}'.format(url))
+        self.log.debug('Get cloud entry point on: {}'.format(url))
         return self._get(url)
 
     @property
@@ -47,7 +48,8 @@ class CIMI(object):
             self._cep = self._get_cloud_entry_point()
         return self._cep
 
-    def _get_base_uri(self):
+    @property
+    def base_uri(self):
         return self.cloud_entry_point['baseURI']
 
     @staticmethod
@@ -67,7 +69,8 @@ class CIMI(object):
             get('href')
 
         if not operation_href:
-            raise KeyError("Operation '{}' not found.".format(operation))
+            raise KeyError("Operation '{}' not found on resource {}.".format(
+                operation, cimi_resource.id))
 
         return operation_href
 
@@ -80,7 +83,7 @@ class CIMI(object):
         if re.match('((http://)|(https://).*)', url_or_id):
             return url_or_id
         else:
-            return '{}/{}'.format(self._get_base_uri().rstrip('/'),
+            return '{}/{}'.format(self.base_uri.rstrip('/'),
                                   url_or_id.lstrip('/'))
 
     def _get_uri(self, resource_id=None, resource_type=None):

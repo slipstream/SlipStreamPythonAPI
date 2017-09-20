@@ -1,4 +1,5 @@
 import re
+from .log import get_logger
 
 
 class Module(object):
@@ -10,6 +11,7 @@ class Module(object):
         """
         self.cimi = cimi
         self.uri = uri
+        self.log = get_logger()
 
     def get(self, url_or_uri=None):
         url = self._to_url(url_or_uri or self.uri)
