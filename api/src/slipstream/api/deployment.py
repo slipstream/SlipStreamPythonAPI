@@ -38,10 +38,14 @@ def deployment_states_after(state):
     return DEPLOYMENT_STATES[DEPLOYMENT_STATES.index(state) + 1:]
 
 
-def is_global_ns(name):
-    return name and (name == NodeDecorator.GLOBAL_NS or
-                     name.startswith(NodeDecorator.GLOBAL_NS +
-                                     NodeDecorator.NODE_PROPERTY_SEPARATOR))
+def is_global_ns(comp):
+    return comp and (comp == ND.GLOBAL_NS or
+                     comp.startswith(ND.GLOBAL_NS +
+                                     ND.NODE_PROPERTY_SEPARATOR))
+
+
+def is_machine(comp):
+    return comp == ND.MACHINE_NAME
 
 
 class Deployment(object):
@@ -79,14 +83,17 @@ class Deployment(object):
     def deployment_href(self):
         return self._resource_href(DEPLOYMENT_RESOURCE_TYPE)
 
-    def to_param_id(self, component, index, name):
+    def to_param_id(self, comp, index, name):
         param = PARAMETER_SEPAR.join(
-            [self._dpl_uuid(), component, str(index), name])
+            [self._dpl_uuid(), comp, str(index), name])
         return '/'.join([self.param_href(), param])
 
-    def to_global_param_id(self, name):
+    def to_param_id_global(self, name):
         param = PARAMETER_SEPAR.join([self._dpl_uuid(), name])
         return '/'.join([self.param_href(), param])
+
+    def to_param_id_machine(self, name):
+        return self.to_param_id(ND.MACHINE_NAME, 1, name)
 
     def state(self, retry=False, stream=False):
         return self.get_deployment_parameter_global('state', retry=retry,
@@ -128,7 +135,11 @@ class Deployment(object):
             return self.cimi.get(param_id, stream=stream, retry=retry)
         elif is_global_ns(comp):
             # ss:name
-            param_id = self.to_global_param_id(name)
+            param_id = self.to_param_id_global(name)
+            return self.cimi.get(param_id, stream=stream, retry=retry)
+        elif is_machine(comp):
+            # machine:name
+            param_id = self.to_param_id_machine(name)
             return self.cimi.get(param_id, stream=stream, retry=retry)
         elif comp and name:
             # Value of parameter `name` from all `component` instances.
@@ -159,33 +170,65 @@ class Deployment(object):
         :param stream:
         :return:
         """
-        return self.get_deployment_parameter(NodeDecorator.GLOBAL_NS, name,
+        return self.get_deployment_parameter(ND.GLOBAL_NS, name,
                                              retry=retry, stream=stream)
 
-    def set_deployment_parameter(self, component, index, name, value,
+    def get_deployment_parameter_machine(self, name, retry=False, stream=False):
+        """Returns machine parameter.
+
+        :param name: Deployment parameter name of single component deployment.
+        :param retry:
+        :param stream:
+        :return:
+        """
+        return self.get_deployment_parameter(ND.MACHINE_NAME, name,
+                                             retry=retry, stream=stream)
+
+    def set_deployment_parameter(self, comp, name, index=None, value='',
                                  retry=False):
         """Sets `value` on deployment parameter `name` of the `component`
         instance with `index`.
 
-        :param   component: Component name
+        :param   comp: Component name
         :param   index: Index of component instance
         :param   name: Parameter name
         :param   value: Value to set
         :return:
         """
-        param_id = self.to_param_id(component, index, name)
-        return self.cimi.edit(param_id, {'value': value}, retry=retry)
+        if index:
+            # node.id:name
+            param_id = self.to_param_id(comp, index, name)
+            return self.cimi.edit(param_id, {'value': value}, retry=retry)
+        elif is_global_ns(comp):
+            # ss:name
+            self.set_deployment_parameter_global(name, value, retry=retry)
+        elif is_machine(comp):
+            # machine:name
+            self.set_deployment_parameter_machine(name, value, retry=retry)
+        else:
+            raise Exception("Don't know now to set parameter: component '{}', "
+                            "index '{}', name '{}'".format(comp or '',
+                                                           index or '',
+                                                           name or ''))
 
     def set_deployment_parameter_global(self, name, value, retry=False):
         """Sets `value` on global deployment parameter `name` in ss namespace.
 
-        :param   component: Component name
-        :param   index: Index of component instance
         :param   name: Parameter name
         :param   value: Value to set
         :return:
         """
-        param_id = self.to_global_param_id(name)
+        param_id = self.to_param_id_global(name)
+        return self.cimi.edit(param_id, {'value': value}, retry=retry)
+
+    def set_deployment_parameter_machine(self, name, value, retry=False):
+        """Sets `value` on machine deployment parameter `name`.
+
+        :param   name: Parameter name
+        :param   value: Value to set
+        :return:
+        """
+        param_id = self.to_param_id_machine(name)
         return self.cimi.edit(param_id, {'value': value}, retry=retry)
 
     def terminate(self):
@@ -221,7 +264,7 @@ class NodeDecorator(object):
     # Execution instance property namespace and separator
     GLOBAL_NS = 'ss'
     NODE_PROPERTY_SEPARATOR = ':'
-    globalNamespacePrefix = GLOBAL_NS + NODE_PROPERTY_SEPARATOR
+    GLOBAL_NS_PREFIX = GLOBAL_NS + NODE_PROPERTY_SEPARATOR
 
     ABORT_KEY = 'abort'
 
@@ -230,9 +273,9 @@ class NodeDecorator(object):
     nodeMultiplicityStartIndex = '1'
 
     # Counter names
-    initCounterName = globalNamespacePrefix + 'initCounter'
-    finalizeCounterName = globalNamespacePrefix + 'finalizeCounter'
-    terminateCounterName = globalNamespacePrefix + 'terminateCounter'
+    initCounterName = GLOBAL_NS_PREFIX + 'initCounter'
+    finalizeCounterName = GLOBAL_NS_PREFIX + 'finalizeCounter'
+    terminateCounterName = GLOBAL_NS_PREFIX + 'terminateCounter'
 
     # Orchestrator name
     orchestratorName = 'orchestrator'
@@ -303,3 +346,7 @@ class NodeDecorator(object):
     def is_orchestrator_name(name):
         return True if NodeDecorator.ORCHESTRATOR_NODENAME_RE.match(
             name) else False
+
+
+ND = NodeDecorator
+

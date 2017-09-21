@@ -54,6 +54,17 @@ class Configuration(Logger):
     def get(self):
         return self.cimi.get(RESOURCE_ID)
 
+    def get_xml(self):
+        """
+        FIXME: Remove later. For ss-config-dump.py
+        """
+        url = '{}/{}'.format(self.cimi.endpoint.rstrip('/'), 'configuration')
+        response = self.cimi.session.get(url,
+                                         headers={'Accept': 'application/xml',
+                                                  'Content-Type': 'application/xml'})
+        self.cimi._check_response_status(response)
+        return response.text
+
     def set(self, conf):
         return self.cimi.edit(RESOURCE_ID, conf)
 

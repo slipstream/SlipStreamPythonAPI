@@ -25,7 +25,7 @@ import pprint
 
 from slipstream.api.http import SessionStore as HttpClient
 import slipstream.util as util
-from slipstream.NodeDecorator import NodeDecorator
+from slipstream.api.deployment import NodeDecorator
 
 
 TIME_FORMAT = '%Y-%m-%dT%H%M%SZ'

@@ -9,6 +9,7 @@ from slipstream.api.defaults import DEFAULT_ENDPOINT
 
 config_file = 'test/test.conf'
 cookie_file = None
+SECTION = 'contextualization'
 
 
 def mk_cookie_file():
@@ -30,18 +31,18 @@ def del_cookie_file():
 def get_login_params():
     config = read_config()
 
-    method = config.get('authn', 'method')
+    method = config.get(SECTION, 'method')
     login_params = {}
     if method == 'internal':
-        username = config.get('authn', 'username')
-        password = config.get('authn', 'password')
+        username = config.get(SECTION, 'username')
+        password = config.get(SECTION, 'password')
         if username and password:
             login_params = {'href': 'session-template/%s' % method,
                             'username': username,
                             'password': password}
     elif method == 'api-key':
-        key = config.get('authn', 'key')
-        secret = config.get('authn', 'secret')
+        key = config.get(SECTION, 'key')
+        secret = config.get(SECTION, 'secret')
         if key and secret:
             login_params = {'href': 'session-template/%s' % method,
                             'key': key,
@@ -52,9 +53,9 @@ def get_login_params():
 def get_config():
     config = read_config()
 
-    endpoint = config.get('authn', 'endpoint')
-    insecure = config.get('authn', 'insecure')
-    log_level = logging.getLevelName(config.get('authn', 'log_level'))
+    endpoint = config.get(SECTION, 'endpoint')
+    insecure = config.get(SECTION, 'insecure')
+    log_level = logging.getLevelName(config.get(SECTION, 'log_level'))
 
     login_params = get_login_params()
 
