@@ -41,6 +41,8 @@ TOO_MANY_REQUESTS_ERROR = 429
 SERVICE_UNAVAILABLE_ERROR = 503
 BAD_GATEWAY_ERROR = 502
 
+http_proto_re = re.compile('^((http://)|(https://))')
+
 
 def init_http_logging(log_level, http_detail=False):
     requests_log = get_logger("requests.packages.urllib3")
@@ -171,6 +173,12 @@ class SessionStore(requests.Session):
                 kwargs['timeout'] = timeout
         else:
             kwargs['timeout'] = HTTP_TIMEOUTS_SSE if stream else HTTP_TIMEOUTS
+
+    def get_cookies(self, domain=None):
+        if domain:
+            return self.cookies._cookies[http_proto_re.sub('', domain)]
+        else:
+            return self.cookies
 
     def request(self, method, url, **kwargs):
         """Generic HTTP request expecting HTTP verb and URL.

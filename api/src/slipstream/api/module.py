@@ -1,5 +1,5 @@
-import re
 from .log import get_logger
+from .http import http_proto_re
 
 
 class Module(object):
@@ -47,7 +47,7 @@ class Module(object):
     def _to_url(self, url_or_uri):
         if not url_or_uri:
             raise Exception('URI is not provided.')
-        elif re.match('((http://)|(https://).*)', url_or_uri):
+        elif http_proto_re.match(url_or_uri):
             return url_or_uri
         else:
             m = ''

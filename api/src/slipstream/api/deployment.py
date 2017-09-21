@@ -75,7 +75,7 @@ class Deployment(object):
         return self.cimi.base_uri + self.resource_id
 
     def _resource_href(self, rtype):
-        return self.cimi.get_resource_href(rtype)
+        return self.cimi.get_collection_href(rtype)
 
     def param_href(self):
         return self._resource_href(PARAMETER_RESOURCE_TYPE)

@@ -14,6 +14,7 @@ CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand',
                         'orderby']
 
 CLOUD_ENTRY_POINT_RESOURCE = 'api/cloud-entry-point'
+SESSION_TEMPLATE_RESOURCE_TYPE = 'sessionTemplates'
 
 
 class CIMI(object):
@@ -74,8 +75,9 @@ class CIMI(object):
 
         return operation_href
 
-    def get_resource_href(self, resource_type):
-        """Obtain entry point for a resource of the type `resource_type`.
+    def get_collection_href(self, resource_type):
+        """Obtain entry point for a resource collection of the type
+        `resource_type`.
         """
         return self.cloud_entry_point[resource_type]['href']
 
@@ -96,7 +98,7 @@ class CIMI(object):
                             "'resource_type', not both.")
 
         if resource_type is not None:
-            resource_id = self.get_resource_href(resource_type)
+            resource_id = self.get_collection_href(resource_type)
             if resource_id is None:
                 raise KeyError("Resource of type '%s' not found." %
                                resource_type)
@@ -283,6 +285,10 @@ class CIMI(object):
         {"href" : "session-template/internal",
          "username" : "username",
          "password" : "password"}
+         or
+        {"href" : "session-template/api-key",
+         "key" : "key",
+         "secret" : "secret"}
 
         Returns server response as dict. Successful responses will contain a
         `status` code of 201 and the `resource-id` of the created session.
@@ -341,9 +347,12 @@ class CIMI(object):
         return self.current_session() is not None
 
     def href_login_internal(self):
-        return self.get_resource_href('sessionTemplates') + \
-               '/internal'
+        return '{}/{}'.format(
+            self.get_collection_href(SESSION_TEMPLATE_RESOURCE_TYPE),
+            'internal')
 
     def href_login_apikey(self):
-        return self.get_resource_href('sessionTemplates') + \
-               '/api-key'
+        return '{}/{}'.format(
+            self.get_collection_href(SESSION_TEMPLATE_RESOURCE_TYPE),
+            'api-key')
+

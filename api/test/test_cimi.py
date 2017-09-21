@@ -31,7 +31,7 @@ def test_get_resource_entry_point():
     cimi = CIMI(Mock())
     cimi._get_cloud_entry_point = Mock(return_value=
                                        {'fooBar': {'href': 'foo-bar'}})
-    assert 'foo-bar' == cimi.get_resource_href('fooBar')
+    assert 'foo-bar' == cimi.get_collection_href('fooBar')
     with pytest.raises(KeyError) as excinfo:
-        cimi.get_resource_href('fooType')
+        cimi.get_collection_href('fooType')
     assert 'fooType' in str(excinfo.value)
