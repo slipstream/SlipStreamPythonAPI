@@ -1,6 +1,12 @@
 import logging
 
-LOG_LEVEL = logging.INFO
+# Mapping between logging levels and CLI verbosity levels.
+# Default WARNING
+# -v INFO
+# -vv DEBUG
+# -vvv DEBUG + HTTP request and body
+
+LOG_LEVEL = logging.DEBUG
 
 FORMAT_FIELD_SEP = ' '
 FORMAT = '%(asctime)s{0}%(name)s{0}%(levelname)s{0}%(message)s'.format(
