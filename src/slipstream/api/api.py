@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import os
-import re
 import six
 import stat
 import uuid
@@ -124,27 +123,77 @@ class Api(object):
         self.username = None
         self._cimi_cloud_entry_point = None
 
-    def login(self, username, password):
+    def login(self, login_params):
+        """Uses given 'login_params' to log into the SlipStream server. The
+        'login_params' must be a map containing an "href" element giving the id of
+        the sessionTemplate resource and any other attributes required for the
+        login method. E.g.:
+
+        {"href" : "session-template/internal",
+         "username" : "username",
+         "password" : "password"}
+         or
+        {"href" : "session-template/api-key",
+         "key" : "key",
+         "secret" : "secret"}
+
+        Returns server response as dict. Successful responses will contain a
+        `status` code of 201 and the `resource-id` of the created session.
+
+        :param   login_params: {"href": "session-template/...", <creds>}
+        :type    login_params: dict
+        :return: Server response.
+        :rtype:  dict
+
         """
+        return self._cimi_post(resource_type='sessions',
+                               json={'sessionTemplate': login_params})
 
-        :param username: 
-        :param password: 
+    def login_internal(self, username, password):
+        """Login to the server using username and password.
 
+        :param username:
+        :param password:
+        :return: see login()
         """
         self.username = username
+        return self.login({'href': 'session-template/internal',
+                           'username': username,
+                           'password': password})
 
-        response = self.session.post('%s/auth/login' % self.endpoint, data={
-            'username': username,
-            'password': password
-        })
-        response.raise_for_status()
+    def login_apikey(self, key, secret):
+        """Login to the server using API key/secret pair.
+
+        :param key:
+        :param secret:
+        :return: see login()
+        """
+        return self.login({'href': 'session-template/api-key',
+                           'username': key,
+                           'password': secret})
 
     def logout(self):
-        """ """
-        response = self.session.get('%s/logout' % self.endpoint)
-        response.raise_for_status()
-        url = urlparse(self.endpoint)
-        self.session.clear(url.netloc)
+        """Logs user out by deleting session.
+        """
+        id = self.current_session()
+        if id is not None:
+            self._cimi_delete(id)
+
+    def current_session(self):
+        """Returns current user session or None.
+
+        :return: Current user session.
+        :rtype: models.CimiResource
+        """
+        resource_type = 'sessions'
+        session = self.cimi_search(resource_type)
+        if session and session.count > 0:
+            return session.sessions[0].get('id')
+        else:
+            return None
+
+    def is_authenticated(self):
+        return self.current_session() is not None
 
     def _xml_get(self, url, **params):
         response = self.session.get('%s%s' % (self.endpoint, url),
