@@ -43,6 +43,7 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  coverage   to run coverage check of the documentation (if enabled)"
 	@echo "  dummy      to check syntax errors of document sources"
+	@echo "  gh-pages   to update the GitHub pages site of this documentation"
 
 .PHONY: clean
 clean:
@@ -224,7 +225,10 @@ dummy:
 	@echo
 	@echo "Build finished. Dummy builder generates no files."
 
-
+.PHONY: gh-pages
 gh-pages:
 	$(MAKE) -C ../
+	@echo
+	@echo "GitHub Pages updated"
+        
 

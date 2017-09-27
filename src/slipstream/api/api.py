@@ -120,7 +120,7 @@ class Api(object):
                 import urllib3
                 urllib3.disable_warnings(
                     urllib3.exceptions.InsecureRequestWarning)
-        self.username = None
+        self._username = None
         self._cimi_cloud_entry_point = None
 
     def login(self, login_params):
@@ -156,7 +156,7 @@ class Api(object):
         :param password:
         :return: see login()
         """
-        self.username = username
+        self._username = username
         return self.login({'href': 'session-template/internal',
                            'username': username,
                            'password': password})
@@ -164,13 +164,14 @@ class Api(object):
     def login_apikey(self, key, secret):
         """Login to the server using API key/secret pair.
 
-        :param key:
-        :param secret:
+        :param key: The Key ID (resource id).
+                    (example: credential/ce02ef40-1342-4e68-838d-e1b2a75adb1e)
+        :param secret: The Secret Key corresponding to the Key ID
         :return: see login()
         """
         return self.login({'href': 'session-template/api-key',
-                           'username': key,
-                           'password': secret})
+                           'key': key,
+                           'secret': secret})
 
     def logout(self):
         """Logs user out by deleting session.
@@ -178,6 +179,7 @@ class Api(object):
         id = self.current_session()
         if id is not None:
             self._cimi_delete(id)
+        self._username = None
 
     def current_session(self):
         """Returns current user session or None.
@@ -194,6 +196,14 @@ class Api(object):
 
     def is_authenticated(self):
         return self.current_session() is not None
+
+    @property
+    def username(self):
+        if not self._username:
+            session_id = self.current_session()
+            if session_id:
+                self._username = self.cimi_get(session_id).username
+        return self._username
 
     def _xml_get(self, url, **params):
         response = self.session.get('%s%s' % (self.endpoint, url),
@@ -574,6 +584,12 @@ class Api(object):
             if value_xml is None:
                 value_xml = etree.SubElement(param_xml, 'value')
             value_xml.text = val
+           
+        parameters_xml = root.find('parameters')
+        for entry in parameters_xml.findall('entry'):
+            param = entry.find('parameter[@name="General.orchestrator.publicsshkey"]')
+            if param:
+                parameters_xml.remove(entry)
 
         response = self._xml_put('/user/{}'.format(root.get('name')), etree.tostring(root, 'UTF-8'))
 
@@ -804,7 +820,7 @@ class Api(object):
                                  scalable=root.get('mutable'),
                                  )
 
-    def list_virtualmachines(self, deployment_id=None, offset=0, limit=20):
+    def list_virtualmachines(self, deployment_id=None, cloud=None, offset=0, limit=20):
         """
         List virtual machines
 
@@ -814,10 +830,15 @@ class Api(object):
         :param limit: Retrieve at most 'limit' virtual machines. Default to 20
 
         """
+        _deployment_id = ''
         if deployment_id is not None:
             _deployment_id = str(deployment_id)
+            
+        _cloud = ''
+        if cloud is not None:
+            _cloud = cloud
 
-        root = self._xml_get('/vms', offset=offset, limit=limit, runUuid=_deployment_id)
+        root = self._xml_get('/vms', offset=offset, limit=limit, runUuid=_deployment_id, cloud=_cloud)
         for elem in ElementTree__iter(root)('vm'):
             run_id_str = elem.get('runUuid')
             run_id = uuid.UUID(run_id_str) if run_id_str is not None else None
