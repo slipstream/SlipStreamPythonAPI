@@ -205,6 +205,14 @@ class Api(object):
                 self._username = self.cimi_get(session_id).username
         return self._username
 
+    def _text_get(self, url, **params):
+        response = self.session.get('%s%s' % (self.endpoint, url),
+                                    headers={'Accept': 'text/plain'},
+                                    params=params)
+        response.raise_for_status()
+
+        return response.text.encode('utf-8')
+
     def _xml_get(self, url, **params):
         response = self.session.get('%s%s' % (self.endpoint, url),
                                     headers={'Accept': 'application/xml'},
@@ -819,6 +827,23 @@ class Api(object):
                                  service_url=service_url,
                                  scalable=root.get('mutable'),
                                  )
+
+    def get_deployment_parameter(self, deployment_id, parameter_name, ignore_abort=False):
+        """
+        Get a parameter of a deployment
+        
+        :param deployment_id: The deployment UUID of the deployment to get
+        :type deployment_id: str or UUID
+        
+        :param parameter_name: The parameter name (eg: ss:state)
+        :type parameter_name: str
+        
+        :param ignore_abort: If False, raise an exception if the deployment has failed
+        :type ignore_abort: bool
+        """
+        ignoreabort = str(ignore_abort).lower()
+        return self._text_get('/run/{}/{}'.format(str(deployment_id), parameter_name),
+                              ignoreabort=ignoreabort)
 
     def list_virtualmachines(self, deployment_id=None, cloud=None, offset=0, limit=20):
         """
