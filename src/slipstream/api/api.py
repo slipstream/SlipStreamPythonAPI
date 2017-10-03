@@ -946,7 +946,7 @@ class Api(object):
         _raw_params.update(self._convert_clouds_to_raw_params(cloud))
         _raw_params.update(self._convert_multiplicity_to_raw_params(multiplicity))
         _raw_params.update(self._convert_tolerate_failures_to_raw_params(tolerate_failures))
-        _raw_params['refqname'] = path
+        _raw_params['refqname'] = _mod_url(path)[1:]
 
         if tags:
             _raw_params['tags'] = tags if isinstance(tags, six.string_types) else ','.join(tags)
