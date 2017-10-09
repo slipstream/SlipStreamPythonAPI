@@ -782,14 +782,28 @@ class Api(object):
                 for app in self.list_project_content(app_path, recurse):
                     yield app
 
-    def list_deployments(self, inactive=False):
+    def list_deployments(self, inactive=False, cloud=None, offset=0, limit=20):
         """
         List deployments
 
         :param inactive: Include inactive deployments. Default to False
+        :type cloud: bool
+
+        :param cloud: Retrieve only deployments for the specified Cloud
+        :type cloud: str
+
+        :param offset: Retrieve deployments starting by the offset<exp>th</exp> one. Default to 0
+        :type offset: int
+
+        :param limit: Retrieve at most 'limit' deployments. Default to 20
+        :type limit: int
 
         """
-        root = self._xml_get('/run', activeOnly=(not inactive))
+        _cloud = ''
+        if cloud is not None:
+            _cloud = cloud
+
+        root = self._xml_get('/run', activeOnly=(not inactive), offset=offset, limit=limit, cloud=_cloud)
         for elem in ElementTree__iter(root)('item'):
             yield models.Deployment(id=uuid.UUID(elem.get('uuid')),
                                     module=_mod(elem.get('moduleResourceUri')),
