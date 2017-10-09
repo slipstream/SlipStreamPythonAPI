@@ -865,9 +865,15 @@ class Api(object):
 
         :param deployment_id: Retrieve only virtual machines about the specified run_id. Default to None
         :type deployment_id: str or UUID
-        :param offset: Retrieve virtual machines starting by the offset<exp>th</exp> one. Default to 0
-        :param limit: Retrieve at most 'limit' virtual machines. Default to 20
 
+        :param cloud: Retrieve only virtual machines for the specified Cloud
+        :type cloud: str
+
+        :param offset: Retrieve virtual machines starting by the offset<exp>th</exp> one. Default to 0
+        :type offset: int
+
+        :param limit: Retrieve at most 'limit' virtual machines. Default to 20
+        :type limit: int
         """
         _deployment_id = ''
         if deployment_id is not None:
@@ -931,17 +937,17 @@ class Api(object):
         :type parameters: dict
         :param tags: List of tags that can be used to identify or annotate a deployment
         :type tags: str or list
-        :param keep_running: [Only apply to applications] Define when to terminate or not a deployment when it reach the
+        :param keep_running: [Only applies to applications] Define when to terminate or not a deployment when it reach the
                              'Ready' state. Possibles values: 'always', 'never', 'on-success', 'on-error'.
                              If scalable is set to True, this value is ignored and it will behave as if it was set to 'always'.
                              If not specified the user default will be used.
         :type keep_running: 'always' or 'never' or 'on-success' or 'on-error'
-        :param scalable: [Only apply to applications] True to start a scalable deployment. Default: False
+        :param scalable: [Only applies to applications] True to start a scalable deployment. Default: False
         :type scalable: bool
-        :param multiplicity: [Only apply to applications] A dict to specify how many instances to start per node.
+        :param multiplicity: [Only applies to applications] A dict to specify how many instances to start per node.
                              Nodenames as keys and number of instances to start as values.
         :type multiplicity: dict
-        :param tolerate_failures: [Only apply to applications] A dict to specify how many failures to tolerate per node.
+        :param tolerate_failures: [Only applies to applications] A dict to specify how many failures to tolerate per node.
                                   Nodenames as keys and number of failure to tolerate as values.
         :type tolerate_failures: dict
         :param check_ssh_key: Set it to True if you want the SlipStream server to check if you have a public ssh key
