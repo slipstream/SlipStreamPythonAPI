@@ -105,7 +105,7 @@ class Api(object):
 
     GLOBAL_PARAMETERS = ['bypass-ssh-check', 'refqname', 'keep-running', 'tags', 'mutable', 'type']
     KEEP_RUNNING_VALUES = ['always', 'never', 'on-success', 'on-error']
-    CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand', 'orderby']
+    CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand', 'orderby', 'aggregation']
 
     def __init__(self, endpoint=None, cookie_file=None, insecure=False):
         self.endpoint = DEFAULT_ENDPOINT if endpoint is None else endpoint
@@ -451,6 +451,9 @@ class Api(object):
 
         :keyword    orderby: Sort by the specified attribute
         :type       orderby: str or list of str
+
+        :keyword    aggregation: CIMI aggregation
+        :type       aggregation: str (operator:field)
 
         :return:    A CimiCollection object with the list of found resources available
                     as a generator with the method 'resources()' or with the attribute 'resources_list'
