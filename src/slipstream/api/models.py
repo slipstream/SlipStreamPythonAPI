@@ -84,6 +84,9 @@ class CimiCollection(CimiResource):
                 list(self.resources())
             return self.__resources
 
+    def __iter__(self):
+        return self.resources()
+
 
 class CloudEntryPoint(CimiResource):
 
