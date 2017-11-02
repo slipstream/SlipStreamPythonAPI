@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_ENDPOINT = 'https://nuv.la'
 DEFAULT_COOKIE_FILE = os.path.expanduser('~/.slipstream/cookies.txt')
 
+
 def _mod_url(path):
     parts = path.strip('/').split('/')
     if parts[0] == 'module':
@@ -47,13 +48,12 @@ def get_module_type(category):
     return mapping.get(category.lower(), category.lower())
 
 
-def ElementTree__iter(root):
+def element_tree__iter(root):
     return getattr(root, 'iter',  # Python 2.7 and above
                    root.getiterator)  # Python 2.6 compatibility
 
 
 class SlipStreamError(Exception):
-
     def __init__(self, reason, response=None):
         super(SlipStreamError, self).__init__(reason)
         self.reason = reason
@@ -63,8 +63,11 @@ class SlipStreamError(Exception):
 class SessionStore(requests.Session):
     """A ``requests.Session`` subclass implementing a file-based session store."""
 
-    def __init__(self, cookie_file=None):
+    def __init__(self, endpoint, reauthenticate, cookie_file=None):
         super(SessionStore, self).__init__()
+        self.session_base_uri = '{}/api/session'.format(endpoint)
+        self.reauthenticate = reauthenticate
+        self.login_params = None
         if cookie_file is None:
             cookie_file = DEFAULT_COOKIE_FILE
         cookie_dir = os.path.dirname(cookie_file)
@@ -78,11 +81,32 @@ class SessionStore(requests.Session):
             self.cookies.clear_expired_cookies()
 
     def request(self, *args, **kwargs):
-        response = super(SessionStore, self).request(*args, **kwargs)
+        super_request = super(SessionStore, self).request
+        response = super_request(*args, **kwargs)
+
         if not self.verify and response.cookies:
             self._unsecure_cookie(args[1], response)
         self.cookies.save(ignore_discard=True)
+
+        url = args[1]
+        if self.reauthenticate and (response.status_code == 403 or response.status_code == 401) \
+                and url is not self.session_base_uri:
+            login_response = self.cimi_login(self.login_params)
+            if login_response is not None and login_response.status_code == 201:
+                # retry the call after reauthentication
+                response = super_request(*args, **kwargs)
+
         return response
+
+    def cimi_login(self, login_params):
+        self.login_params = login_params
+        if self.login_params:
+            return self.request('POST', self.session_base_uri,
+                                headers={'Content-Type': 'application/json',
+                                         'Accept': 'application/json'},
+                                json={'sessionTemplate': login_params})
+        else:
+            return None
 
     def _unsecure_cookie(self, url_str, response):
         url = urlparse(url_str)
@@ -107,13 +131,13 @@ class Api(object):
     KEEP_RUNNING_VALUES = ['always', 'never', 'on-success', 'on-error']
     CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand', 'orderby', 'aggregation']
 
-    def __init__(self, endpoint=None, cookie_file=None, insecure=False):
-        self.endpoint = DEFAULT_ENDPOINT if endpoint is None else endpoint
-        self.session = SessionStore(cookie_file)
+    def __init__(self, endpoint=DEFAULT_ENDPOINT, cookie_file=None, insecure=False, reauthenticate=False):
+        self.endpoint = endpoint
+        self.session = SessionStore(endpoint, reauthenticate, cookie_file=cookie_file)
         self.session.verify = (insecure == False)
         self.session.headers.update({'Accept': 'application/xml'})
         if insecure:
-            try: 
+            try:
                 requests.packages.urllib3.disable_warnings(
                     requests.packages.urllib3.exceptions.InsecureRequestWarning)
             except:
@@ -146,8 +170,7 @@ class Api(object):
         :rtype:  dict
 
         """
-        return self._cimi_post(resource_type='sessions',
-                               json={'sessionTemplate': login_params})
+        return self.session.cimi_login(login_params)
 
     def login_internal(self, username, password):
         """Login to the server using username and password.
@@ -176,16 +199,17 @@ class Api(object):
     def logout(self):
         """Logs user out by deleting session.
         """
-        id = self.current_session()
-        if id is not None:
-            self._cimi_delete(id)
+        session_id = self.current_session()
+        if session_id is not None:
+            self._cimi_delete(session_id)
+        self.session.login_params = None
         self._username = None
 
     def current_session(self):
         """Returns current user session or None.
 
         :return: Current user session.
-        :rtype: models.CimiResource
+        :rtype: str
         """
         resource_type = 'sessions'
         session = self.cimi_search(resource_type)
@@ -202,7 +226,7 @@ class Api(object):
         if not self._username:
             session_id = self.current_session()
             if session_id:
-                self._username = self.cimi_get(session_id).username
+                self._username = self.cimi_get(session_id).json['username']
         return self._username
 
     def _text_get(self, url, **params):
@@ -255,7 +279,7 @@ class Api(object):
 
     @staticmethod
     def _dict_values_to_string(d):
-        return {k: v if isinstance(v, six.string_types) else str(v) for k,v in six.iteritems(d)}
+        return {k: v if isinstance(v, six.string_types) else str(v) for k, v in six.iteritems(d)}
 
     @staticmethod
     def _flatten_cloud_parameters(cloud_parameters):
@@ -278,7 +302,6 @@ class Api(object):
     @staticmethod
     def _check_xml_result(response):
         if not (200 <= response.status_code < 300):
-            reason = ''
             try:
                 reason = etree.fromstring(response.text).get('detail')
             except:
@@ -303,7 +326,7 @@ class Api(object):
         other_params = {}
         for key, value in params.items():
             if key in cls.CIMI_PARAMETERS_NAME:
-                cimi_params['$'+key] = value
+                cimi_params['$' + key] = value
             else:
                 other_params[key] = value
         return cimi_params, other_params
@@ -340,7 +363,6 @@ class Api(object):
         try:
             response.raise_for_status()
         except HTTPError as e:
-            message = 'Unknown error'
             try:
                 json_msg = e.response.json()
                 message = json_msg.get('message')
@@ -595,7 +617,7 @@ class Api(object):
             if value_xml is None:
                 value_xml = etree.SubElement(param_xml, 'value')
             value_xml.text = val
-           
+
         parameters_xml = root.find('parameters')
         for entry in parameters_xml.findall('entry'):
             param = entry.find('parameter[@name="General.orchestrator.publicsshkey"]')
@@ -613,7 +635,6 @@ class Api(object):
         Get informations for a given user, if permitted
         :param username: The username of the user.
                          Default to the user logged in if not provided or None.
-        :type path: str|None
         """
         root = self._get_user_xml(username)
 
@@ -649,11 +670,11 @@ class Api(object):
             ssh_public_keys=general_params.get('General.ssh.public.key', '').splitlines(),
             keep_running=general_params.get('General.keep-running'),
             timeout=general_params.get('General.Timeout'),
-            privileged=root.get('issuper',"false").lower() == "true",
+            privileged=root.get('issuper', "false").lower() == "true",
             active_since=root.get('activeSince'),
             last_online=root.get('lastOnline'),
             online=root.get('online'))
-            
+
         return user
 
     def list_users(self):
@@ -661,14 +682,14 @@ class Api(object):
         List users (requires privileged access)
         """
         root = self._list_users_xml()
-        for elem in ElementTree__iter(root)('item'):
+        for elem in element_tree__iter(root)('item'):
             yield models.UserItem(username=elem.get('name'),
                                   email=elem.get('email'),
                                   first_name=elem.get('firstName'),
                                   last_name=elem.get('lastName'),
                                   organization=elem.get('organization'),
                                   roles=elem.get('roles', '').split(','),
-                                  privileged=elem.get('issuper',"false").lower() == "true",
+                                  privileged=elem.get('issuper', "false").lower() == "true",
                                   active_since=elem.get('activeSince'),
                                   last_online=elem.get('lastOnline'),
                                   online=elem.get('online'))
@@ -678,12 +699,12 @@ class Api(object):
         List apps in the appstore
         """
         root = self._xml_get('/appstore')
-        for elem in ElementTree__iter(root)('item'):
+        for elem in element_tree__iter(root)('item'):
             yield models.App(name=elem.get('name'),
                              type=get_module_type(elem.get('category')),
                              version=int(elem.get('version')),
                              path=_mod(elem.get('resourceUri'),
-                                      with_version=False))
+                                       with_version=False))
 
     def get_element(self, path):
         """
@@ -701,15 +722,15 @@ class Api(object):
                 logger.debug("Access denied for path: {0}. Skipping.".format(path))
             raise
 
-        module = models.Module(name=root.get('shortName'),
-                               type=get_module_type(root.get('category')),
-                               created=root.get('creation'),
-                               modified=root.get('lastModified'),
-                               description=root.get('description'),
-                               version=int(root.get('version')),
-                               path=_mod('%s/%s' % (root.get('parentUri').strip('/'),
-                                                   root.get('shortName'))))
-        return module
+        ss_module = models.Module(name=root.get('shortName'),
+                                  type=get_module_type(root.get('category')),
+                                  created=root.get('creation'),
+                                  modified=root.get('lastModified'),
+                                  description=root.get('description'),
+                                  version=int(root.get('version')),
+                                  path=_mod('%s/%s' % (root.get('parentUri').strip('/'),
+                                                       root.get('shortName'))))
+        return ss_module
 
     def get_application_nodes(self, path):
         """
@@ -763,7 +784,7 @@ class Api(object):
                 return
             raise
 
-        for elem in ElementTree__iter(root)('item'):
+        for elem in element_tree__iter(root)('item'):
             # Compute module path
             if elem.get('resourceUri'):
                 app_path = elem.get('resourceUri')
@@ -807,13 +828,13 @@ class Api(object):
             _cloud = cloud
 
         root = self._xml_get('/run', activeOnly=(not inactive), offset=offset, limit=limit, cloud=_cloud)
-        for elem in ElementTree__iter(root)('item'):
+        for elem in element_tree__iter(root)('item'):
             yield models.Deployment(id=uuid.UUID(elem.get('uuid')),
                                     module=_mod(elem.get('moduleResourceUri')),
                                     status=elem.get('status').lower(),
                                     started_at=elem.get('startTime'),
                                     last_state_change=elem.get('lastStateChangeTime'),
-                                    clouds=elem.get('cloudServiceNames','').split(','),
+                                    clouds=elem.get('cloudServiceNames', '').split(','),
                                     username=elem.get('username'),
                                     abort=elem.get('abort'),
                                     service_url=elem.get('serviceUrl'),
@@ -838,7 +859,7 @@ class Api(object):
                                  status=root.get('state').lower(),
                                  started_at=root.get('startTime'),
                                  last_state_change=root.get('lastStateChangeTime'),
-                                 clouds=root.get('cloudServiceNames','').split(','),
+                                 clouds=root.get('cloudServiceNames', '').split(','),
                                  username=root.get('user'),
                                  abort=abort,
                                  service_url=service_url,
@@ -881,13 +902,13 @@ class Api(object):
         _deployment_id = ''
         if deployment_id is not None:
             _deployment_id = str(deployment_id)
-            
+
         _cloud = ''
         if cloud is not None:
             _cloud = cloud
 
         root = self._xml_get('/vms', offset=offset, limit=limit, runUuid=_deployment_id, cloud=_cloud)
-        for elem in ElementTree__iter(root)('vm'):
+        for elem in element_tree__iter(root)('vm'):
             run_id_str = elem.get('runUuid')
             run_id = uuid.UUID(run_id_str) if run_id_str is not None else None
             yield models.VirtualMachine(id=elem.get('instanceId'),
@@ -977,7 +998,7 @@ class Api(object):
         if keep_running:
             if keep_running not in self.KEEP_RUNNING_VALUES:
                 raise ValueError('"keep_running" should be one of {}, not "{}"'.format(self.KEEP_RUNNING_VALUES,
-                                                                                     keep_running))
+                                                                                       keep_running))
             _raw_params['keep-running'] = keep_running
 
         if scalable:
@@ -1027,7 +1048,7 @@ class Api(object):
         """
         url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(node_name))
         data = {"n": quantity} if quantity else None
-        
+
         response = self.session.post(url, data=data)
 
         response.raise_for_status()
@@ -1064,7 +1085,7 @@ class Api(object):
         Get current usage and quota by cloud service.
         """
         root = self._xml_get('/dashboard')
-        for elem in ElementTree__iter(root)('cloudUsage'):
+        for elem in element_tree__iter(root)('cloudUsage'):
             yield models.Usage(cloud=elem.get('cloud'),
                                quota=int(elem.get('vmQuota')),
                                run_usage=int(elem.get('userRunUsage')),
@@ -1170,6 +1191,3 @@ class Api(object):
                     raw_params['parameter--{}'.format(key)] = value
 
         return raw_params
-
-
-
