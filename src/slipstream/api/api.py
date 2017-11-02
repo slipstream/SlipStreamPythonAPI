@@ -1191,3 +1191,9 @@ class Api(object):
                     raw_params['parameter--{}'.format(key)] = value
 
         return raw_params
+
+    def get_cloud_credentials(self, cimi_filter=''):
+        filter = "type^='cloud-cred'"
+        if cimi_filter:
+            filter += 'and %s' % cimi_filter
+        return self.cimi_search(resource_type='credentials', filter=filter)
