@@ -65,7 +65,7 @@ class SessionStore(requests.Session):
 
     def __init__(self, endpoint, reauthenticate, cookie_file=None):
         super(SessionStore, self).__init__()
-        self.session_base_uri = '{}/api/session'.format(endpoint)
+        self.session_base_url = '{}/api/session'.format(endpoint)
         self.reauthenticate = reauthenticate
         self.login_params = None
         if cookie_file is None:
@@ -80,6 +80,10 @@ class SessionStore(requests.Session):
             self.cookies.load(ignore_discard=True)
             self.cookies.clear_expired_cookies()
 
+    def need_to_login(self, accessed_url, status_code):
+        return self.reauthenticate and status_code in [401, 403] and accessed_url != self.session_base_url
+
+
     def request(self, *args, **kwargs):
         super_request = super(SessionStore, self).request
         response = super_request(*args, **kwargs)
@@ -89,8 +93,7 @@ class SessionStore(requests.Session):
         self.cookies.save(ignore_discard=True)
 
         url = args[1]
-        if self.reauthenticate and (response.status_code == 403 or response.status_code == 401) \
-                and url is not self.session_base_uri:
+        if self.need_to_login(url, response.status_code):
             login_response = self.cimi_login(self.login_params)
             if login_response is not None and login_response.status_code == 201:
                 # retry the call after reauthentication
@@ -101,7 +104,7 @@ class SessionStore(requests.Session):
     def cimi_login(self, login_params):
         self.login_params = login_params
         if self.login_params:
-            return self.request('POST', self.session_base_uri,
+            return self.request('POST', self.session_base_url,
                                 headers={'Content-Type': 'application/json',
                                          'Accept': 'application/json'},
                                 json={'sessionTemplate': login_params})
@@ -226,7 +229,7 @@ class Api(object):
         if not self._username:
             session_id = self.current_session()
             if session_id:
-                self._username = self.cimi_get(session_id).json['username']
+                self._username = self.cimi_get(session_id).json.get('username')
         return self._username
 
     def _text_get(self, url, **params):
