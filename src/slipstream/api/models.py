@@ -158,6 +158,19 @@ Usage = collections.namedtuple('Usage', [
     'quota',
 ])
 
+ModuleParameter = collections.namedtuple('ModuleParameter', [
+    'name',
+    'value',
+    'defaultValue',
+    'category',
+    'description',
+    'isSet',
+    'mandatory',
+    'readonly',
+    'type',
+    'instructions',
+])
+
 Module = collections.namedtuple('Module', [
     'name',
     'type',
