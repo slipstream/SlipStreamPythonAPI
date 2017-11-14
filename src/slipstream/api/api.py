@@ -763,7 +763,7 @@ class Api(object):
 
     def get_parameters(self, path, parameter_name=None, parameter_names=None):
         """
-        Get all or a subset of parameter associated to a project, a component or an application
+        Get all or a subset of the parameters associated to a project, a component or an application
 
         :param path: The path of an  element (project/component/application)
         :type path: str
