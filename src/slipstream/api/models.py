@@ -168,6 +168,11 @@ Module = collections.namedtuple('Module', [
     'path',
 ])
 
+CloudImageIdentifier = collections.namedtuple('CloudImageIdentifier', [
+    'cloud',
+    'identifier',
+])
+
 UserItem = collections.namedtuple('UserItem', [
     'username',
     'email',
