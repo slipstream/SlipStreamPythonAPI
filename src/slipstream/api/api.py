@@ -754,7 +754,7 @@ class Api(object):
         for node in root.findall("cloudImageIdentifiers/cloudImageIdentifier"):
             yield models.CloudImageIdentifier(
                 cloud=node.get("cloudServiceName"),
-                identifier.get("cloudImageIdentifier"),
+                identifier=node.get("cloudImageIdentifier"),
             )
 
     def get_application_nodes(self, path):
