@@ -83,7 +83,6 @@ class SessionStore(requests.Session):
     def need_to_login(self, accessed_url, status_code):
         return self.reauthenticate and status_code in [401, 403] and accessed_url != self.session_base_url
 
-
     def request(self, *args, **kwargs):
         super_request = super(SessionStore, self).request
         response = super_request(*args, **kwargs)
@@ -735,6 +734,71 @@ class Api(object):
                                                        root.get('shortName'))))
         return ss_module
 
+    def update_component(self, path, description=None, module_reference_uri=None, cloud_identifiers=None,
+                         keep_ref_uri_and_cloud_ids=False, logo_link=None):
+        """
+        Update a component, when a parameter is not provided in parameter it is unchanged.
+
+        :param path: The path of a component
+        :type path: str
+        :param description: Description of the component
+        :type description: str
+        :param module_reference_uri: URI of the parent component
+        :type module_reference_uri: str
+        :param cloud_identifiers: A dict where keys are cloud names and values are identifier of the image in the cloud
+        :type cloud_identifiers: dict
+        :param keep_ref_uri_and_cloud_ids: Don't remove module_reference_uri if any cloud identifier are provided,
+                                           or don't remove cloud identifiers if a module_reference_uri is provided
+        :type keep_ref_uri_and_cloud_ids: bool
+        :param logo_link: URL to an image that should be used as logo
+        :type logo_link: str
+
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+        if str(root.get('category')) != "Image":
+            raise SlipStreamError("Specified path is not a component")
+
+        if description is not None:
+            root.set('description', description)
+
+        if logo_link is not None:
+            root.set('logoLink', logo_link)
+
+        if module_reference_uri is not None:
+            root.set('moduleReferenceUri', module_reference_uri)
+            if not keep_ref_uri_and_cloud_ids:
+                root.set('isBase', 'false')
+                root.find('cloudImageIdentifiers').clear()
+
+        if cloud_identifiers is not None:
+            cloud_image_identifiers = root.find('cloudImageIdentifiers')
+            for cloud, identifier in cloud_identifiers.items():
+                node = cloud_image_identifiers.find('cloudImageIdentifier[@cloudServiceName="%s"]' % cloud)
+                if identifier is None or len(identifier) == 0:
+                    if node is not None:
+                        cloud_image_identifiers.remove(node)
+                else:
+                    if node is None:
+                        node = etree.Element('cloudImageIdentifier', cloudServiceName=cloud)
+                        cloud_image_identifiers.append(node)
+                    node.set('cloudImageIdentifier', identifier)
+            if not keep_ref_uri_and_cloud_ids:
+                root.set('moduleReferenceUri', '')
+                root.set('isBase', 'true')
+
+        try:
+            self._xml_put(url, etree.tostring(root, 'UTF-8'))
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+
     def get_cloud_image_identifiers(self, path):
         """
         Get all image identifiers associated to a native component
@@ -750,7 +814,7 @@ class Api(object):
             if e.response.status_code == 403:
                 logger.debug("Access denied for path: {0}. Skipping.".format(path))
             raise
-            
+
         for node in root.findall("cloudImageIdentifiers/cloudImageIdentifier"):
             yield models.CloudImageIdentifier(
                 cloud=node.get("cloudServiceName"),
@@ -1124,7 +1188,7 @@ class Api(object):
         data = {"n": quantity} if quantity else None
 
         response = self.session.post(url, data=data)
-  
+
         if response.status_code == 409:
             reason = etree.fromstring(response.text).get('detail')
             raise SlipStreamError(reason)
@@ -1153,7 +1217,7 @@ class Api(object):
         url = '%s/run/%s/%s' % (self.endpoint, str(deployment_id), str(node_name))
 
         response = self.session.delete(url, data={"ids": ",".join(str(id_) for id_ in ids)})
-  
+
         if response.status_code == 409:
             reason = etree.fromstring(response.text).get('detail')
             raise SlipStreamError(reason)
