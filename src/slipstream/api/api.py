@@ -735,7 +735,7 @@ class Api(object):
                                                        root.get('shortName'))))
         return ss_module
 
-    def get_cloud_image_identifier(self, path):
+    def get_cloud_image_identifiers(self, path):
         """
         Get all image identifier associated to a component
 
