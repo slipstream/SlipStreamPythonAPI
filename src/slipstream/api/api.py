@@ -737,7 +737,7 @@ class Api(object):
 
     def get_cloud_image_identifiers(self, path):
         """
-        Get all image identifier associated to a component
+        Get all image identifiers associated to a native component
 
         :param path: The path of an component
         :type path: str
