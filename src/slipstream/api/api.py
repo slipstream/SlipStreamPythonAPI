@@ -735,6 +735,28 @@ class Api(object):
                                                        root.get('shortName'))))
         return ss_module
 
+    def get_cloud_image_identifiers(self, path):
+        """
+        Get all image identifiers associated to a native component
+
+        :param path: The path of an component
+        :type path: str
+
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+            
+        for node in root.findall("cloudImageIdentifiers/cloudImageIdentifier"):
+            yield models.CloudImageIdentifier(
+                cloud=node.get("cloudServiceName"),
+                identifier=node.get("cloudImageIdentifier"),
+            )
+
     def get_application_nodes(self, path):
         """
         Get nodes of an application
