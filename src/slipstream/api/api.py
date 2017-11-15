@@ -761,6 +761,55 @@ class Api(object):
                               extra_disk_volatile=node.get('extraDiskVolatile'),
                               )
 
+    def get_parameters(self, path, parameter_name=None, parameter_names=None):
+        """
+        Get all or a subset of the parameters associated to a project, a component or an application
+
+        :param path: The path of an  element (project/component/application)
+        :type path: str
+
+        :param parameter_name: The parameter name (eg: 'cpu.nb')
+        :type parameter_name: str|None
+
+        :param parameter_names: The list of parameter names (eg: ['cpu.nb', 'ram.GB', ])
+        :type parameter_names: list|None
+
+        :return: A list containing all the parameters, or at most the one requested
+        :rtype: list
+
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+
+        if parameter_name is not None:
+            query = 'parameters/entry/parameter[@name="' + parameter_name + '"]'
+        else:
+            query = 'parameters/entry/parameter'
+
+        for node in root.findall(query):
+            value = node.findtext('value', '')
+            defaultValue = node.findtext('defaultValue', '')
+            instructions = node.findtext('instructions', '')
+            name = node.get("name")
+            if parameter_names is None or name in parameter_names:
+                yield models.ModuleParameter(
+                    name=name,
+                    value=value,
+                    defaultValue=defaultValue,
+                    category=node.get("category"),
+                    description=node.get("description"),
+                    isSet=node.get("isSet"),
+                    mandatory=node.get("mandatory"),
+                    readonly=node.get("readonly"),
+                    type=node.get("type"),
+                    instructions=instructions,
+                )
+
     def list_project_content(self, path=None, recurse=False):
         """
         List the content of a project
