@@ -821,6 +821,77 @@ class Api(object):
                 identifier=node.get("cloudImageIdentifier"),
             )
 
+    def update_image(
+            self,
+            path,
+            description=None,
+            module_reference_uri=None,
+            cloud_identifiers=None,
+            keep_both_module_reference_uri_and_cloud_identifiers=False,
+            logo_link=None,
+    ):
+        """
+        Update a component, when a parameter is not provided in parameter it is unchanged.
+
+        :param path: The path of an element (project/component/application)
+        :type path: str
+        :param description: A description of the image
+        :type description: str
+        :param module_reference_uri: URI of the parent component
+        :type module_reference_uri: str
+        :param cloud_identifiers: A dict where keys are cloud names and values are identifier of the image in the cloud
+        :type cloud_identifiers: dict
+        :param keep_both_module_reference_uri_and_cloud_identifiers: Don't remove module_reference_uri if any cloud identifier are provided, or don't remove cloud identifiers if a module_reference_uri is provided
+        :type keep_both_module_reference_uri_and_cloud_identifiers: bool
+        :param logo_link: URL to an image that should be used as logo
+        :type logo_link: str
+
+        """
+        url = _mod_url(path)
+        try:
+            root = self._xml_get(url)
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+        if str(root.get('category')) != "Image":
+            raise SlipStreamError("Specified path is not a component")
+
+        if description is not None:
+            root.set('description', description)
+
+        if logo_link is not None:
+            root.set('logoLink', logo_link)
+
+        if module_reference_uri is not None:
+            root.set('moduleReferenceUri', module_reference_uri)
+            if not keep_both_module_reference_uri_and_cloud_identifiers:
+                root.set('isBase', 'false')
+                root.find('cloudImageIdentifiers').clear()
+
+        if cloud_identifiers is not None:
+            cloud_image_identifiers = root.find('cloudImageIdentifiers')
+            for cloud, identifier in cloud_identifiers.items():
+                node = cloud_image_identifiers.find('cloudImageIdentifier[@cloudServiceName="%s"]' % cloud)
+                if (identifier is None or len(identifier) == 0):
+                    if node is not None:
+                        cloud_image_identifiers.remove(node)
+                else:
+                    if node is None:
+                        node = ET.Element('cloudImageIdentifier', cloudServiceName=cloud)
+                        cloud_image_identifiers.append(node)
+                    node.set('cloudImageIdentifier', identifier)
+            if not keep_both_module_reference_uri_and_cloud_identifiers:
+                root.set('moduleReferenceUri', '')
+                root.set('isBase', 'true')
+
+        try:
+            self._xml_put(url, etree.tostring(root, 'UTF-8'))
+        except requests.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.debug("Access denied for path: {0}. Skipping.".format(path))
+            raise
+
     def get_application_nodes(self, path):
         """
         Get nodes of an application
