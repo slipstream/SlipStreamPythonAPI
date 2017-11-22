@@ -84,6 +84,9 @@ class CimiCollection(CimiResource):
                 list(self.resources())
             return self.__resources
 
+    def __iter__(self):
+        return self.resources()
+
 
 class CloudEntryPoint(CimiResource):
 
@@ -155,6 +158,19 @@ Usage = collections.namedtuple('Usage', [
     'quota',
 ])
 
+ModuleParameter = collections.namedtuple('ModuleParameter', [
+    'name',
+    'value',
+    'defaultValue',
+    'category',
+    'description',
+    'isSet',
+    'mandatory',
+    'readonly',
+    'type',
+    'instructions',
+])
+
 Module = collections.namedtuple('Module', [
     'name',
     'type',
@@ -163,6 +179,11 @@ Module = collections.namedtuple('Module', [
     'description',
     'version',
     'path',
+])
+
+CloudImageIdentifier = collections.namedtuple('CloudImageIdentifier', [
+    'cloud',
+    'identifier',
 ])
 
 UserItem = collections.namedtuple('UserItem', [

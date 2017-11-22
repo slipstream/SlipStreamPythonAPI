@@ -9,9 +9,26 @@ Python wrapper of the SlipStream API
   `$ python`
   ```python
   from slipstream.api import Api
+  
   api = Api('https://nuv.la')
-  api.login('username', 'password')
+  
+  # Login with username & password
+  api.login_internal('username', 'password')
+  # or
+  # Login with api-key & secret
+  api.login_apikey('credential/uuid', 'secret')
+  
+  # List available applications from the App Store
   api.list_applications()
+  
+  # Deploy an application and get it's deployment ID
+  deployment_id = api.deploy('apps/WordPress/wordpress', cloud='exoscale-ch-gva')
+
+  # Terminate the deployment started above
+  api.terminate(deployment_id)
+
+  # Logout
+  api.logout()
   ```
 
 ## Contribute
