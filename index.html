@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>SlipStream Python API documentation &mdash; SlipStream Python API 0.8.3 documentation</title>
+  <title>SlipStream Python API documentation &mdash; SlipStream Python API 0.9.1 documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="SlipStream Python API 0.8.3 documentation" href="#"/> 
+    <link rel="top" title="SlipStream Python API 0.9.1 documentation" href="#"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -75,6 +75,23 @@
               <!-- Local TOC -->
               <div class="local-toc"><ul>
 <li><a class="reference internal" href="#">SlipStream Python API documentation</a><ul>
+<li><a class="reference internal" href="#install">Install</a><ul>
+<li><a class="reference internal" href="#latest-release-from-pypi">Latest release from pypi</a></li>
+<li><a class="reference internal" href="#most-recent-version-from-source-code">Most recent version from source code</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#login-on-nuvla-with-username-and-password">Login on Nuvla with username and password</a></li>
+<li><a class="reference internal" href="#login-on-nuvla-with-key-and-secret">Login on Nuvla with key and secret</a></li>
+<li><a class="reference internal" href="#list-applications-from-the-app-store">List applications from the App Store</a></li>
+<li><a class="reference internal" href="#list-base-images">List base images</a></li>
+<li><a class="reference internal" href="#simple-component-deployment-wordpress-server">Simple component deployment (WordPress server)</a></li>
+<li><a class="reference internal" href="#complete-application-deployment-wordpress-server">Complete application deployment (WordPress server)</a></li>
+<li><a class="reference internal" href="#terminate-a-deployment">Terminate a deployment</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#api-documentation">API documentation</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
@@ -117,7 +134,6 @@
             
   <div class="section" id="slipstream-python-api-documentation">
 <h1>SlipStream Python API documentation<a class="headerlink" href="#slipstream-python-api-documentation" title="Permalink to this headline">¶</a></h1>
-<p>Contents:</p>
 <div class="toctree-wrapper compound">
 </div>
 <table border="1" class="longtable docutils">
@@ -128,13 +144,112 @@
 <tbody valign="top">
 </tbody>
 </table>
-<span class="target" id="module-slipstream"></span><dl class="class">
-<dt id="slipstream.api.Api">
-<em class="property">class </em><code class="descclassname">slipstream.api.</code><code class="descname">Api</code><span class="sig-paren">(</span><em>endpoint=None</em>, <em>cookie_file=None</em>, <em>insecure=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-slipstream.api.api"></span><p>Python wrapper of the SlipStream API (<a class="reference external" href="http://ssapi.sixsq.com">http://ssapi.sixsq.com</a>).</p>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="latest-release-from-pypi">
+<h3>Latest release from pypi<a class="headerlink" href="#latest-release-from-pypi" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-Bash"><div class="highlight"><pre><span></span>$ pip install slipstream-api
+</pre></div>
+</div>
+</div>
+<div class="section" id="most-recent-version-from-source-code">
+<h3>Most recent version from source code<a class="headerlink" href="#most-recent-version-from-source-code" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-Bash"><div class="highlight"><pre><span></span>$ pip install <span class="s1">&#39;https://github.com/slipstream/SlipStreamPythonAPI/archive/master.zip&#39;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>To use this library, import it and instanciate it.
+Then use one of the method to login.:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">slipstream.api</span> <span class="k">import</span> <span class="n">Api</span>
+
+<span class="n">api</span> <span class="o">=</span> <span class="n">Api</span><span class="p">()</span>
+
+<span class="n">api</span><span class="o">.</span><span class="n">login_internal</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="s1">&#39;password&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="login-on-nuvla-with-username-and-password">
+<h3>Login on Nuvla with username and password<a class="headerlink" href="#login-on-nuvla-with-username-and-password" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">api</span><span class="o">.</span><span class="n">login_internal</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span> <span class="s1">&#39;password&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="login-on-nuvla-with-key-and-secret">
+<h3>Login on Nuvla with key and secret<a class="headerlink" href="#login-on-nuvla-with-key-and-secret" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">api</span><span class="o">.</span><span class="n">login_apikey</span><span class="p">(</span><span class="s1">&#39;credential/ce02ef40-1342-4e68-838d-e1b2a75adb1e&#39;</span><span class="p">,</span> 
+                 <span class="s1">&#39;the-secret-key&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="list-applications-from-the-app-store">
+<h3>List applications from the App Store<a class="headerlink" href="#list-applications-from-the-app-store" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pprint</span> <span class="k">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="n">pp</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">list_applications</span><span class="p">()))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="list-base-images">
+<h3>List base images<a class="headerlink" href="#list-base-images" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pprint</span> <span class="k">import</span> <span class="n">pprint</span> <span class="k">as</span> <span class="n">pp</span>
+<span class="n">pp</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">list_project_content</span><span class="p">(</span><span class="s1">&#39;examples/images&#39;</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="simple-component-deployment-wordpress-server">
+<h3>Simple component deployment (WordPress server)<a class="headerlink" href="#simple-component-deployment-wordpress-server" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Deploy the WordPress component</span>
+<span class="n">deployment_id</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span><span class="s1">&#39;apps/WordPress/wordpress&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="complete-application-deployment-wordpress-server">
+<h3>Complete application deployment (WordPress server)<a class="headerlink" href="#complete-application-deployment-wordpress-server" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1"># Cloud</span>
+<span class="n">cloud</span> <span class="o">=</span> <span class="s1">&#39;exoscale-ch-gva&#39;</span>
+
+<span class="c1"># WordPress Title</span>
+<span class="n">wordpress_title</span> <span class="o">=</span> <span class="s1">&#39;WordPress deployed by SlipStream through SlipStreamPythonAPI&#39;</span>
+
+<span class="c1"># Create the dict of parameters to (re)define</span>
+<span class="n">parameters</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">wordpress_title</span><span class="o">=</span><span class="n">wordpress_title</span><span class="p">)</span>
+
+<span class="c1"># Deploy the WordPress component</span>
+<span class="n">deployment_id</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">deploy</span><span class="p">(</span><span class="s1">&#39;apps/WordPress/wordpress&#39;</span><span class="p">,</span> <span class="n">cloud</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+
+<span class="c1"># Wait the deployment to be ready</span>
+<span class="k">while</span> <span class="n">api</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">)</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s1">&#39;ready&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Print the WordPress URL</span>
+<span class="nb">print</span> <span class="n">api</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">)</span><span class="o">.</span><span class="n">service_url</span>
+
+<span class="c1"># Print the WordPress admin username and password</span>
+<span class="nb">print</span> <span class="n">api</span><span class="o">.</span><span class="n">get_deployment_parameter</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">,</span> <span class="s1">&#39;machine:admin_email&#39;</span><span class="p">)</span>
+<span class="nb">print</span> <span class="n">api</span><span class="o">.</span><span class="n">get_deployment_parameter</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">,</span> <span class="s1">&#39;machine:admin_password&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="terminate-a-deployment">
+<h3>Terminate a deployment<a class="headerlink" href="#terminate-a-deployment" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">api</span><span class="o">.</span><span class="n">terminate</span><span class="p">(</span><span class="n">deployment_id</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="api-documentation">
+<h2>API documentation<a class="headerlink" href="#api-documentation" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="slipstream.api.api.Api">
+<em class="property">class </em><code class="descclassname">slipstream.api.api.</code><code class="descname">Api</code><span class="sig-paren">(</span><em>endpoint='https://nuv.la'</em>, <em>cookie_file=None</em>, <em>insecure=False</em>, <em>reauthenticate=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api" title="Permalink to this definition">¶</a></dt>
 <dd><p>This class is a Python wrapper&amp;helper of the native SlipStream REST API</p>
 <dl class="method">
-<dt id="slipstream.api.Api.add_node_instances">
-<code class="descname">add_node_instances</code><span class="sig-paren">(</span><em>deployment_id</em>, <em>node_name</em>, <em>quantity=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.add_node_instances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.add_node_instances" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.add_node_instances">
+<code class="descname">add_node_instances</code><span class="sig-paren">(</span><em>deployment_id</em>, <em>node_name</em>, <em>quantity=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.add_node_instances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.add_node_instances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add new instance(s) of a deployment’s node (horizontal scale up).</p>
 <p>Warning: The targeted deployment has to be “scalable”.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -159,8 +274,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.build_component">
-<code class="descname">build_component</code><span class="sig-paren">(</span><em>path</em>, <em>cloud=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.build_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.build_component" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.build_component">
+<code class="descname">build_component</code><span class="sig-paren">(</span><em>path</em>, <em>cloud=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.build_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.build_component" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -176,8 +291,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.cimi_add">
-<code class="descname">cimi_add</code><span class="sig-paren">(</span><em>resource_type</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.cimi_add" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.cimi_add">
+<code class="descname">cimi_add</code><span class="sig-paren">(</span><em>resource_type</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_add"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.cimi_add" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a CIMI resource to the specified resource_type (Collection)</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -200,8 +315,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.cimi_delete">
-<code class="descname">cimi_delete</code><span class="sig-paren">(</span><em>resource_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.cimi_delete" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.cimi_delete">
+<code class="descname">cimi_delete</code><span class="sig-paren">(</span><em>resource_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_delete"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.cimi_delete" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete a CIMI resource by it’s resource id</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -218,8 +333,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.cimi_edit">
-<code class="descname">cimi_edit</code><span class="sig-paren">(</span><em>resource_id</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_edit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.cimi_edit" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.cimi_edit">
+<code class="descname">cimi_edit</code><span class="sig-paren">(</span><em>resource_id</em>, <em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_edit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.cimi_edit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Edit a CIMI resource by it’s resource id</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -242,8 +357,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.cimi_get">
-<code class="descname">cimi_get</code><span class="sig-paren">(</span><em>resource_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.cimi_get" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.cimi_get">
+<code class="descname">cimi_get</code><span class="sig-paren">(</span><em>resource_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.cimi_get" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retreive a CIMI resource by it’s resource id</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -258,8 +373,8 @@
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.cimi_search">
-<code class="descname">cimi_search</code><span class="sig-paren">(</span><em>resource_type</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.cimi_search" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.cimi_search">
+<code class="descname">cimi_search</code><span class="sig-paren">(</span><em>resource_type</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.cimi_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.cimi_search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search for CIMI resources of the given type (Collection).</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -273,6 +388,7 @@
 <li><strong>select</strong> (<em>str</em><em> or </em><em>list of str</em>) – Select attributes to return. (resourceURI always returned)</li>
 <li><strong>expand</strong> (<em>str</em><em> or </em><em>list of str</em>) – Expand linked resources (not implemented yet)</li>
 <li><strong>orderby</strong> (<em>str</em><em> or </em><em>list of str</em>) – Sort by the specified attribute</li>
+<li><strong>aggregation</strong> (<em>str</em><em> (</em><em>operator:field</em><em>)</em>) – CIMI aggregation</li>
 </ul>
 </td>
 </tr>
@@ -288,8 +404,8 @@ as a generator with the method ‘resources()’ or with the attribute ‘resour
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.create_user">
-<code class="descname">create_user</code><span class="sig-paren">(</span><em>username</em>, <em>password</em>, <em>email</em>, <em>first_name</em>, <em>last_name</em>, <em>organization=None</em>, <em>roles=None</em>, <em>privileged=False</em>, <em>default_cloud=None</em>, <em>default_keep_running='never'</em>, <em>ssh_public_keys=None</em>, <em>log_verbosity=1</em>, <em>execution_timeout=30</em>, <em>usage_email='never'</em>, <em>cloud_parameters=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.create_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.create_user" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.create_user">
+<code class="descname">create_user</code><span class="sig-paren">(</span><em>username</em>, <em>password</em>, <em>email</em>, <em>first_name</em>, <em>last_name</em>, <em>organization=None</em>, <em>roles=None</em>, <em>privileged=False</em>, <em>default_cloud=None</em>, <em>default_keep_running='never'</em>, <em>ssh_public_keys=None</em>, <em>log_verbosity=1</em>, <em>execution_timeout=30</em>, <em>usage_email='never'</em>, <em>cloud_parameters=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.create_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.create_user" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a new user into SlipStream.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -325,8 +441,8 @@ A dict with the cloud name as the key and a dict of parameter as the value.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.current_session">
-<code class="descname">current_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.current_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.current_session" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.current_session">
+<code class="descname">current_session</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.current_session"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.current_session" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns current user session or None.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -334,15 +450,15 @@ A dict with the cloud name as the key and a dict of parameter as the value.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Current user session.</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">models.CimiResource</td>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">str</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.delete_element">
-<code class="descname">delete_element</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.delete_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.delete_element" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.delete_element">
+<code class="descname">delete_element</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.delete_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.delete_element" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete a project, a component or an application</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -355,8 +471,8 @@ A dict with the cloud name as the key and a dict of parameter as the value.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.deploy">
-<code class="descname">deploy</code><span class="sig-paren">(</span><em>path</em>, <em>cloud=None</em>, <em>parameters=None</em>, <em>tags=None</em>, <em>keep_running=None</em>, <em>scalable=False</em>, <em>multiplicity=None</em>, <em>tolerate_failures=None</em>, <em>check_ssh_key=False</em>, <em>raw_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.deploy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.deploy" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.deploy">
+<code class="descname">deploy</code><span class="sig-paren">(</span><em>path</em>, <em>cloud=None</em>, <em>parameters=None</em>, <em>tags=None</em>, <em>keep_running=None</em>, <em>scalable=False</em>, <em>multiplicity=None</em>, <em>tolerate_failures=None</em>, <em>check_ssh_key=False</em>, <em>raw_params=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.deploy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.deploy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run a component or an application</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -372,14 +488,14 @@ If not specified the user default cloud will be used.</li>
 To redefine a parameter of a node use “&lt;nodename&gt;” as keys and dict of parameters as values.
 To redefine a parameter of a component or a global parameter use “&lt;parametername&gt;” as the key.</li>
 <li><strong>tags</strong> (<em>str</em><em> or </em><em>list</em>) – List of tags that can be used to identify or annotate a deployment</li>
-<li><strong>keep_running</strong> (<em>'always'</em><em> or </em><em>'never'</em><em> or </em><em>'on-success'</em><em> or </em><em>'on-error'</em>) – [Only apply to applications] Define when to terminate or not a deployment when it reach the
+<li><strong>keep_running</strong> (<em>'always'</em><em> or </em><em>'never'</em><em> or </em><em>'on-success'</em><em> or </em><em>'on-error'</em>) – [Only applies to applications] Define when to terminate or not a deployment when it reach the
 ‘Ready’ state. Possibles values: ‘always’, ‘never’, ‘on-success’, ‘on-error’.
 If scalable is set to True, this value is ignored and it will behave as if it was set to ‘always’.
 If not specified the user default will be used.</li>
-<li><strong>scalable</strong> (<em>bool</em>) – [Only apply to applications] True to start a scalable deployment. Default: False</li>
-<li><strong>multiplicity</strong> (<em>dict</em>) – [Only apply to applications] A dict to specify how many instances to start per node.
+<li><strong>scalable</strong> (<em>bool</em>) – [Only applies to applications] True to start a scalable deployment. Default: False</li>
+<li><strong>multiplicity</strong> (<em>dict</em>) – [Only applies to applications] A dict to specify how many instances to start per node.
 Nodenames as keys and number of instances to start as values.</li>
-<li><strong>tolerate_failures</strong> (<em>dict</em>) – [Only apply to applications] A dict to specify how many failures to tolerate per node.
+<li><strong>tolerate_failures</strong> (<em>dict</em>) – [Only applies to applications] A dict to specify how many failures to tolerate per node.
 Nodenames as keys and number of failure to tolerate as values.</li>
 <li><strong>check_ssh_key</strong> (<em>bool</em>) – Set it to True if you want the SlipStream server to check if you have a public ssh key
 defined in your user profile. Useful if you want to ensure you will have access to VMs.</li>
@@ -399,16 +515,30 @@ Keys must be formatted in the format understood by the SlipStream server.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.get_application_nodes">
-<code class="descname">get_application_nodes</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_application_nodes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.get_application_nodes" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.get_application_nodes">
+<code class="descname">get_application_nodes</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_application_nodes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.get_application_nodes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get nodes of an application
 :param path: The path of an application
 :type path: str</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.get_deployment">
-<code class="descname">get_deployment</code><span class="sig-paren">(</span><em>deployment_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_deployment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.get_deployment" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.get_cloud_image_identifiers">
+<code class="descname">get_cloud_image_identifiers</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_cloud_image_identifiers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.get_cloud_image_identifiers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all image identifiers associated to a native component</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>path</strong> (<em>str</em>) – The path of an component</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.api.Api.get_deployment">
+<code class="descname">get_deployment</code><span class="sig-paren">(</span><em>deployment_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_deployment"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.get_deployment" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get a deployment</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -421,8 +551,27 @@ Keys must be formatted in the format understood by the SlipStream server.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.get_element">
-<code class="descname">get_element</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.get_element" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.get_deployment_parameter">
+<code class="descname">get_deployment_parameter</code><span class="sig-paren">(</span><em>deployment_id</em>, <em>parameter_name</em>, <em>ignore_abort=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_deployment_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.get_deployment_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a parameter of a deployment</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>deployment_id</strong> (<em>str</em><em> or </em><em>UUID</em>) – The deployment UUID of the deployment to get</li>
+<li><strong>parameter_name</strong> (<em>str</em>) – The parameter name (eg: ss:state)</li>
+<li><strong>ignore_abort</strong> (<em>bool</em>) – If False, raise an exception if the deployment has failed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.api.Api.get_element">
+<code class="descname">get_element</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_element"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.get_element" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get details about a project, a component or an application</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -435,43 +584,74 @@ Keys must be formatted in the format understood by the SlipStream server.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.get_user">
-<code class="descname">get_user</code><span class="sig-paren">(</span><em>username=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.get_user" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get informations for a given user, if permitted
-:param username: The username of the user.</p>
-<blockquote>
-<div>Default to the user logged in if not provided or None.</div></blockquote>
+<dt id="slipstream.api.api.Api.get_parameters">
+<code class="descname">get_parameters</code><span class="sig-paren">(</span><em>path</em>, <em>parameter_name=None</em>, <em>parameter_names=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_parameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.get_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all or a subset of the parameters associated to a project, a component or an application</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="slipstream.api.Api.list_applications">
-<code class="descname">list_applications</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_applications"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_applications" title="Permalink to this definition">¶</a></dt>
-<dd><p>List apps in the appstore</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="slipstream.api.Api.list_deployments">
-<code class="descname">list_deployments</code><span class="sig-paren">(</span><em>inactive=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_deployments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_deployments" title="Permalink to this definition">¶</a></dt>
-<dd><p>List deployments</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>inactive</strong> – Include inactive deployments. Default to False</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>path</strong> (<em>str</em>) – The path of an  element (project/component/application)</li>
+<li><strong>parameter_name</strong> (<em>str|None</em>) – The parameter name (eg: ‘cpu.nb’)</li>
+<li><strong>parameter_names</strong> (<em>list|None</em>) – The list of parameter names (eg: [‘cpu.nb’, ‘ram.GB’, ])</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A list containing all the parameters, or at most the one requested</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.list_project_content">
-<code class="descname">list_project_content</code><span class="sig-paren">(</span><em>path=None</em>, <em>recurse=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_project_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_project_content" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.get_user">
+<code class="descname">get_user</code><span class="sig-paren">(</span><em>username=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.get_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.get_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get informations for a given user, if permitted</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>username</strong> – The username of the user.
+Default to the user logged in if not provided or None.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.api.Api.list_applications">
+<code class="descname">list_applications</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_applications"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.list_applications" title="Permalink to this definition">¶</a></dt>
+<dd><p>List apps in the appstore</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.api.Api.list_deployments">
+<code class="descname">list_deployments</code><span class="sig-paren">(</span><em>inactive=False</em>, <em>cloud=None</em>, <em>offset=0</em>, <em>limit=20</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_deployments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.list_deployments" title="Permalink to this definition">¶</a></dt>
+<dd><p>List deployments</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inactive</strong> – Include inactive deployments. Default to False</li>
+<li><strong>cloud</strong> (<em>str</em>) – Retrieve only deployments for the specified Cloud</li>
+<li><strong>offset</strong> (<em>int</em>) – Retrieve deployments starting by the offset&lt;exp&gt;th&lt;/exp&gt; one. Default to 0</li>
+<li><strong>limit</strong> (<em>int</em>) – Retrieve at most ‘limit’ deployments. Default to 20</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.api.Api.list_project_content">
+<code class="descname">list_project_content</code><span class="sig-paren">(</span><em>path=None</em>, <em>recurse=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_project_content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.list_project_content" title="Permalink to this definition">¶</a></dt>
 <dd><p>List the content of a project</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -488,14 +668,14 @@ Keys must be formatted in the format understood by the SlipStream server.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.list_users">
-<code class="descname">list_users</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_users"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_users" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.list_users">
+<code class="descname">list_users</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_users"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.list_users" title="Permalink to this definition">¶</a></dt>
 <dd><p>List users (requires privileged access)</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.list_virtualmachines">
-<code class="descname">list_virtualmachines</code><span class="sig-paren">(</span><em>deployment_id=None</em>, <em>cloud=None</em>, <em>offset=0</em>, <em>limit=20</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_virtualmachines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.list_virtualmachines" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.list_virtualmachines">
+<code class="descname">list_virtualmachines</code><span class="sig-paren">(</span><em>deployment_id=None</em>, <em>cloud=None</em>, <em>offset=0</em>, <em>limit=20</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.list_virtualmachines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.list_virtualmachines" title="Permalink to this definition">¶</a></dt>
 <dd><p>List virtual machines</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -503,8 +683,9 @@ Keys must be formatted in the format understood by the SlipStream server.</li>
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>deployment_id</strong> (<em>str</em><em> or </em><em>UUID</em>) – Retrieve only virtual machines about the specified run_id. Default to None</li>
-<li><strong>offset</strong> – Retrieve virtual machines starting by the offset&lt;exp&gt;th&lt;/exp&gt; one. Default to 0</li>
-<li><strong>limit</strong> – Retrieve at most ‘limit’ virtual machines. Default to 20</li>
+<li><strong>cloud</strong> (<em>str</em>) – Retrieve only virtual machines for the specified Cloud</li>
+<li><strong>offset</strong> (<em>int</em>) – Retrieve virtual machines starting by the offset&lt;exp&gt;th&lt;/exp&gt; one. Default to 0</li>
+<li><strong>limit</strong> (<em>int</em>) – Retrieve at most ‘limit’ virtual machines. Default to 20</li>
 </ul>
 </td>
 </tr>
@@ -513,8 +694,8 @@ Keys must be formatted in the format understood by the SlipStream server.</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.login">
-<code class="descname">login</code><span class="sig-paren">(</span><em>login_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.login"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.login" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.login">
+<code class="descname">login</code><span class="sig-paren">(</span><em>login_params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.login"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.login" title="Permalink to this definition">¶</a></dt>
 <dd><p>Uses given ‘login_params’ to log into the SlipStream server. The
 ‘login_params’ must be a map containing an “href” element giving the id of
 the sessionTemplate resource and any other attributes required for the
@@ -545,8 +726,8 @@ or</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.login_apikey">
-<code class="descname">login_apikey</code><span class="sig-paren">(</span><em>key</em>, <em>secret</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.login_apikey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.login_apikey" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.login_apikey">
+<code class="descname">login_apikey</code><span class="sig-paren">(</span><em>key</em>, <em>secret</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.login_apikey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.login_apikey" title="Permalink to this definition">¶</a></dt>
 <dd><p>Login to the server using API key/secret pair.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -567,8 +748,8 @@ or</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.login_internal">
-<code class="descname">login_internal</code><span class="sig-paren">(</span><em>username</em>, <em>password</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.login_internal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.login_internal" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.login_internal">
+<code class="descname">login_internal</code><span class="sig-paren">(</span><em>username</em>, <em>password</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.login_internal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.login_internal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Login to the server using username and password.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -588,14 +769,14 @@ or</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.logout">
-<code class="descname">logout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.logout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.logout" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.logout">
+<code class="descname">logout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.logout"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.logout" title="Permalink to this definition">¶</a></dt>
 <dd><p>Logs user out by deleting session.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.publish">
-<code class="descname">publish</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.publish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.publish" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.publish">
+<code class="descname">publish</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.publish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.publish" title="Permalink to this definition">¶</a></dt>
 <dd><p>Publish a component or an application to the appstore</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -608,8 +789,8 @@ or</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.remove_node_instances">
-<code class="descname">remove_node_instances</code><span class="sig-paren">(</span><em>deployment_id</em>, <em>node_name</em>, <em>ids</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.remove_node_instances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.remove_node_instances" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.remove_node_instances">
+<code class="descname">remove_node_instances</code><span class="sig-paren">(</span><em>deployment_id</em>, <em>node_name</em>, <em>ids</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.remove_node_instances"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.remove_node_instances" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove a list of node instances from a deployment.</p>
 <p>Warning: The targeted deployment has to be “scalable”.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -634,8 +815,8 @@ or</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.terminate">
-<code class="descname">terminate</code><span class="sig-paren">(</span><em>deployment_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.terminate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.terminate" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.terminate">
+<code class="descname">terminate</code><span class="sig-paren">(</span><em>deployment_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.terminate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.terminate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Terminate a deployment</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -648,8 +829,8 @@ or</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.unpublish">
-<code class="descname">unpublish</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.unpublish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.unpublish" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.unpublish">
+<code class="descname">unpublish</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.unpublish"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.unpublish" title="Permalink to this definition">¶</a></dt>
 <dd><p>Unpublish a component or an application from the appstore</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -662,8 +843,31 @@ or</dd>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.update_user">
-<code class="descname">update_user</code><span class="sig-paren">(</span><em>username=None</em>, <em>password=None</em>, <em>email=None</em>, <em>first_name=None</em>, <em>last_name=None</em>, <em>organization=None</em>, <em>roles=None</em>, <em>privileged=None</em>, <em>default_cloud=None</em>, <em>default_keep_running=None</em>, <em>ssh_public_keys=None</em>, <em>log_verbosity=None</em>, <em>execution_timeout=None</em>, <em>usage_email=None</em>, <em>cloud_parameters=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.update_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.update_user" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.update_component">
+<code class="descname">update_component</code><span class="sig-paren">(</span><em>path</em>, <em>description=None</em>, <em>module_reference_uri=None</em>, <em>cloud_identifiers=None</em>, <em>keep_ref_uri_and_cloud_ids=False</em>, <em>logo_link=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.update_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.update_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a component, when a parameter is not provided in parameter it is unchanged.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>str</em>) – The path of a component</li>
+<li><strong>description</strong> (<em>str</em>) – Description of the component</li>
+<li><strong>module_reference_uri</strong> (<em>str</em>) – URI of the parent component</li>
+<li><strong>cloud_identifiers</strong> (<em>dict</em>) – A dict where keys are cloud names and values are identifier of the image in the cloud</li>
+<li><strong>keep_ref_uri_and_cloud_ids</strong> (<em>bool</em>) – Don’t remove module_reference_uri if any cloud identifier are provided,
+or don’t remove cloud identifiers if a module_reference_uri is provided</li>
+<li><strong>logo_link</strong> (<em>str</em>) – URL to an image that should be used as logo</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="slipstream.api.api.Api.update_user">
+<code class="descname">update_user</code><span class="sig-paren">(</span><em>username=None</em>, <em>password=None</em>, <em>email=None</em>, <em>first_name=None</em>, <em>last_name=None</em>, <em>organization=None</em>, <em>roles=None</em>, <em>privileged=None</em>, <em>default_cloud=None</em>, <em>default_keep_running=None</em>, <em>ssh_public_keys=None</em>, <em>log_verbosity=None</em>, <em>execution_timeout=None</em>, <em>usage_email=None</em>, <em>cloud_parameters=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.update_user"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.update_user" title="Permalink to this definition">¶</a></dt>
 <dd><p>Update an existing user in SlipStream.
 Any parameter provided will be updated, others parameters will not be touched.</p>
 <p>Parameters are identical to the ones of the method ‘create_user’ except that they can all be None.</p>
@@ -673,13 +877,26 @@ If not provided or None the current user will be used</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="slipstream.api.Api.usage">
-<code class="descname">usage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.usage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.Api.usage" title="Permalink to this definition">¶</a></dt>
+<dt id="slipstream.api.api.Api.usage">
+<code class="descname">usage</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#Api.usage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.Api.usage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get current usage and quota by cloud service.</p>
 </dd></dl>
 
 </dd></dl>
 
+<dl class="class">
+<dt id="slipstream.api.api.SessionStore">
+<em class="property">class </em><code class="descclassname">slipstream.api.api.</code><code class="descname">SessionStore</code><span class="sig-paren">(</span><em>endpoint</em>, <em>reauthenticate</em>, <em>cookie_file=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#SessionStore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.SessionStore" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <code class="docutils literal"><span class="pre">requests.Session</span></code> subclass implementing a file-based session store.</p>
+<dl class="method">
+<dt id="slipstream.api.api.SessionStore.clear">
+<code class="descname">clear</code><span class="sig-paren">(</span><em>domain</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/slipstream/api/api.html#SessionStore.clear"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#slipstream.api.api.SessionStore.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clear cookies for the specified domain.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
 </div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
@@ -720,7 +937,7 @@ If not provided or None the current user will be used</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.8.3',
+            VERSION:'0.9.1',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

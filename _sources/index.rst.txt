@@ -6,18 +6,15 @@
 SlipStream Python API documentation
 ===================================
 
-Contents:
-
 .. toctree::
-   :maxdepth: 5
+   :maxdepth: 1
+   :caption: Contents:
 
 .. autosummary::
    :toctree: _autosummary
 
-.. automodule:: slipstream
-
-.. autoclass:: slipstream.api.Api
-       :members:
+.. automodule:: slipstream.api.api
+   :members:
 
 Indices and tables
 ==================
