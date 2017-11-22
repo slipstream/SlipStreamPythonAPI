@@ -1,3 +1,131 @@
+#
+# (C) Copyright 2017 SixSq (http://sixsq.com/).
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+"""
+ Python wrapper of the SlipStream API (http://ssapi.sixsq.com).
+
+
+ Install
+ -------
+
+ Latest release from pypi
+ ~~~~~~~~~~~~~~~~~~~~~~~~
+ .. code-block:: Bash
+ 
+   $ pip install slipstream-api
+ 
+ Most recent version from source code
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ .. code-block:: Bash
+ 
+   $ pip install 'https://github.com/slipstream/SlipStreamPythonAPI/archive/master.zip'
+
+ 
+ Usage
+ -----
+ To use this library, import it and instanciate it.
+ Then use one of the method to login.::
+    from slipstream.api import Api
+ 
+    api = Api()
+
+    api.login_internal('username', 'password')
+
+ 
+ Examples
+ --------
+
+ Login on Nuvla with username and password
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ::
+
+    api.login_internal('username', 'password')
+
+
+ Login on Nuvla with key and secret
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ::
+
+    api.login_apikey('credential/ce02ef40-1342-4e68-838d-e1b2a75adb1e', 
+                     'the-secret-key')
+
+
+ List applications from the App Store
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ::
+
+    from pprint import pprint as pp
+    pp(list(api.list_applications()))
+
+
+ List base images
+ ~~~~~~~~~~~~~~~~
+ ::
+
+    from pprint import pprint as pp
+    pp(list(api.list_project_content('examples/images')))
+
+
+ Simple component deployment (WordPress server)
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ::
+ 
+    # Deploy the WordPress component
+    deployment_id = api.deploy('apps/WordPress/wordpress')
+ 
+ 
+ Complete application deployment (WordPress server)
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ ::
+
+    # Cloud
+    cloud = 'exoscale-ch-gva'
+
+    # WordPress Title
+    wordpress_title = 'WordPress deployed by SlipStream through SlipStreamPythonAPI'
+    
+    # Create the dict of parameters to (re)define
+    parameters = dict(wordpress_title=wordpress_title)
+    
+    # Deploy the WordPress component
+    deployment_id = api.deploy('apps/WordPress/wordpress', cloud, parameters)
+    
+    # Wait the deployment to be ready
+    while api.get_deployment(deployment_id).status != 'ready': time.sleep(10)
+    
+    # Print the WordPress URL
+    print api.get_deployment(deployment_id).service_url
+
+    # Print the WordPress admin username and password
+    print api.get_deployment_parameter(deployment_id, 'machine:admin_email')
+    print api.get_deployment_parameter(deployment_id, 'machine:admin_password')
+
+
+ Terminate a deployment
+ ~~~~~~~~~~~~~~~~~~~~~~
+ ::
+
+    api.terminate(deployment_id)
+
+    
+ API documentation
+ -----------------
+
+"""
+
 from __future__ import absolute_import
 
 import os
@@ -608,6 +736,7 @@ class Api(object):
     def get_user(self, username=None):
         """
         Get informations for a given user, if permitted
+
         :param username: The username of the user.
                          Default to the user logged in if not provided or None.
         :type path: str|None
