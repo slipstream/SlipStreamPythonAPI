@@ -217,7 +217,8 @@ class SessionStore(requests.Session):
 
         if not self.verify and response.cookies:
             self._unsecure_cookie(args[1], response)
-        self.cookies.save(ignore_discard=True)
+        if 'Set-Cookie' in response.headers:
+            self.cookies.save(ignore_discard=True)
 
         url = args[1]
         if self.need_to_login(url, response.status_code):
