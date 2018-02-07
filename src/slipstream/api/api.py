@@ -1151,6 +1151,14 @@ class Api(object):
         return self._text_get('/run/{}/{}'.format(str(deployment_id), parameter_name),
                               ignoreabort=ignoreabort)
 
+    def get_deployment_events(self, deployment_id, types=None):
+        if types is None:
+            types = []
+        filter = "content/resource/href='run/%s'" % deployment_id
+        if types:
+            filter += " and (%s)" % ' or '.join(map(lambda x: "type='%s'" % x, types))
+        return self.cimi_search(resource_type='events', filter=filter)
+
     def list_virtualmachines(self, deployment_id=None, cloud=None, offset=0, limit=20):
         """
         List virtual machines
