@@ -1,3 +1,2 @@
-defusedxml
 requests
 six

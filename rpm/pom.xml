@@ -112,7 +112,6 @@
               if ! command -v pip > /dev/null; then
               curl "https://bootstrap.pypa.io/get-pip.py" | python
               fi
-              pip install -Iv defusedxml
               pip install -Iv requests
               pip install -Iv six
             </script>
