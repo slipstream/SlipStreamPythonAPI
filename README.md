@@ -71,6 +71,7 @@ python setup.py sdist bdist_wheel upload -r pypi
 ## Documentation
 ### Simple docstring based documentation
 You can get the full documentation by typing:
+
 _Python shell/code_
 ```python
 from slipstream.api import Api
@@ -82,6 +83,7 @@ pydoc slipstream.api.Api
 ```
 
 Or for a specific function:
+
 _Python shell/code_
 ```python
 from slipstream.api import Api
@@ -93,6 +95,7 @@ pydoc slipstream.api.Api.deploy
 ```
 
 Or to get only the docstring:
+
 _Python shell/code_
 ```python
 from slipstream.api import Api
