@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # (C) Copyright 2017 SixSq (http://sixsq.com/).
 # 
