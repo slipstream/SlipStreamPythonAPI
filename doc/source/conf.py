@@ -82,7 +82,7 @@ author = u'SixSq'
 # built documents.
 #
 # The short X.Y version.
-version = _version[:-2]
+version = _version
 # The full version, including alpha/beta/rc tags.
 release = _version
 
