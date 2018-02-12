@@ -3,7 +3,7 @@ gh-pages:
 	git checkout gh-pages
 	rm .git/index || true
 	git clean -fdx
-	git checkout master doc/Makefile doc/source src
+	git checkout master doc/Makefile doc/source api/src
 	git reset HEAD
 	cd doc; make html
 	cp -rfv doc/build/html/. ./

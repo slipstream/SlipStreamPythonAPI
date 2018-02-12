@@ -1,13 +1,18 @@
 # SlipStreamPythonAPI
 
-Python wrapper of the SlipStream API
+Python client for the SlipStream CIMI API.
 
 ## Installation
+
   `$ pip install slipstream-api`
 
+  or
+
+  `$ yum install slipstream-python-api`
+
 ## Usage
-  `$ python`
-  ```python
+
+```python
   from slipstream.api import Api
   
   api = Api('https://nuv.la')
@@ -32,13 +37,35 @@ Python wrapper of the SlipStream API
   ```
 
 ## Contribute
-  `$ sh`
-  ```sh
+
+### Development helper
+```sh
   git clone https://github.com/slipstream/SlipStreamPythonAPI.git
   cd SlipStreamPythonAPI/
   pip install --editable .
   ```
-  
+
+### Push version to pypi
+
+Configure `~/.pypirc` with pypi repo credentials. This file should look
+like as following:
+
+```[distutils]
+index-servers=pypi
+
+[pypi]
+username = <username>
+password = <password>
+```
+
+From repo root directory, launch following commands:
+```sh
+git checkout <release-version>
+mvn clean install -P release
+cd pypi/target/pypi-pkg/
+python setup.py sdist bdist_wheel upload -r pypi
+```
+
 ## Documentation
 ### Simple docstring based documentation
 You can get the full documentation by typing:
@@ -48,7 +75,7 @@ from slipstream.api import Api
 help(Api)
 ```
 _Shell_
-```bash
+```sh
 pydoc slipstream.api.Api
 ```
 
@@ -59,7 +86,7 @@ from slipstream.api import Api
 help(Api.deploy)
 ```
 _Shell_
-```bash
+```sh
 pydoc slipstream.api.Api.deploy
 ```
 
