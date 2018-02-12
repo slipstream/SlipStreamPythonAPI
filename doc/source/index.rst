@@ -13,7 +13,7 @@ SlipStream Python API documentation
 .. autosummary::
    :toctree: _autosummary
 
-.. automodule:: slipstream.api.api
+.. automodule:: api.api
    :members:
 
 Indices and tables

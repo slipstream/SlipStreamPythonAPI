@@ -17,18 +17,14 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import re
-import ast
 import sys
 from datetime import datetime
+import xml.etree.ElementTree as ET
 
-sys.path.insert(0, os.path.abspath('../../src'))
+sys.path.insert(0, os.path.abspath('../../api/src/slipstream'))
 
-_version_re = re.compile(r'__version__\s+=\s+(.*)')
-
-with open('../../src/slipstream/api/__init__.py', 'rb') as f:
-    _version = str(ast.literal_eval(_version_re.search(
-        f.read().decode('utf-8')).group(1)))
+pomfile= ET.parse('../../pom.xml')
+_version = pomfile.getroot().find('{http://maven.apache.org/POM/4.0.0}version').text
 
 
 #import sphinx_bootstrap_theme
