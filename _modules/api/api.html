@@ -772,6 +772,26 @@
         <span class="n">resp_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cimi_put</span><span class="p">(</span><span class="n">resource_type</span><span class="o">=</span><span class="n">resource_type</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">cimi_params</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">query_params</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">models</span><span class="o">.</span><span class="n">CimiCollection</span><span class="p">(</span><span class="n">resp_json</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="Api.cimi_operation"><a class="viewcode-back" href="../../index.html#api.api.Api.cimi_operation">[docs]</a>    <span class="k">def</span> <span class="nf">cimi_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">,</span> <span class="n">operation</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Execute an operation on a CIMI resource</span>
+
+<span class="sd">        :param      resource_id: The id of the resource to execute operation on</span>
+<span class="sd">        :type       resource_id: str</span>
+
+<span class="sd">        :param      operation: Operation name (e.g. describe)</span>
+<span class="sd">        :type       operation: str</span>
+
+<span class="sd">        :param      data: The data to serialize into JSON</span>
+<span class="sd">        :type       data: dict</span>
+
+<span class="sd">        :return:    A CimiResponse object which should contain the attributes &#39;status&#39;, &#39;resource-id&#39; and &#39;message&#39;</span>
+<span class="sd">        :rtype:     CimiResponse</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">resource</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cimi_get</span><span class="p">(</span><span class="n">resource_id</span><span class="o">=</span><span class="n">resource_id</span><span class="p">)</span>
+        <span class="n">operation_href</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cimi_find_operation_href</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span> <span class="n">operation</span><span class="p">)</span>
+        <span class="n">resp_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cimi_post</span><span class="p">(</span><span class="n">operation_href</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">models</span><span class="o">.</span><span class="n">CimiResource</span><span class="p">(</span><span class="n">resp_json</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="Api.create_user"><a class="viewcode-back" href="../../index.html#api.api.Api.create_user">[docs]</a>    <span class="k">def</span> <span class="nf">create_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">email</span><span class="p">,</span> <span class="n">first_name</span><span class="p">,</span> <span class="n">last_name</span><span class="p">,</span>
                     <span class="n">organization</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">roles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">privileged</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="n">default_cloud</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_keep_running</span><span class="o">=</span><span class="s1">&#39;never&#39;</span><span class="p">,</span>

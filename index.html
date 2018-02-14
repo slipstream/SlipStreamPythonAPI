@@ -415,6 +415,31 @@ Then use one of the method to login.:</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="api.api.Api.cimi_operation">
+<code class="descname">cimi_operation</code><span class="sig-paren">(</span><em>resource_id</em>, <em>operation</em>, <em>data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/api/api.html#Api.cimi_operation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.Api.cimi_operation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute an operation on a CIMI resource</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>resource_id</strong> (<em>str</em>) – The id of the resource to execute operation on</li>
+<li><strong>operation</strong> (<em>str</em>) – Operation name (e.g. describe)</li>
+<li><strong>data</strong> (<em>dict</em>) – The data to serialize into JSON</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A CimiResponse object which should contain the attributes ‘status’, ‘resource-id’ and ‘message’</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">CimiResponse</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="api.api.Api.cimi_search">
 <code class="descname">cimi_search</code><span class="sig-paren">(</span><em>resource_type</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/api/api.html#Api.cimi_search"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#api.api.Api.cimi_search" title="Permalink to this definition">¶</a></dt>
 <dd><p>Search for CIMI resources of the given type (Collection).</p>
