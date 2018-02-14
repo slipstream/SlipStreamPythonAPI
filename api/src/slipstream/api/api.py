@@ -617,6 +617,26 @@ class Api(object):
         resp_json = self._cimi_put(resource_type=resource_type, data=cimi_params, params=query_params)
         return models.CimiCollection(resp_json, resource_type)
 
+    def cimi_operation(self, resource_id, operation, data=None):
+        """ Execute an operation on a CIMI resource
+
+        :param      resource_id: The id of the resource to execute operation on
+        :type       resource_id: str
+
+        :param      operation: Operation name (e.g. describe)
+        :type       operation: str
+
+        :param      data: The data to serialize into JSON
+        :type       data: dict
+
+        :return:    A CimiResponse object which should contain the attributes 'status', 'resource-id' and 'message'
+        :rtype:     CimiResponse
+        """
+        resource = self.cimi_get(resource_id=resource_id)
+        operation_href = self._cimi_find_operation_href(resource, operation)
+        resp_json = self._cimi_post(operation_href, json=data)
+        return models.CimiResource(resp_json)
+
     def create_user(self, username, password, email, first_name, last_name,
                     organization=None, roles=None, privileged=False,
                     default_cloud=None, default_keep_running='never',

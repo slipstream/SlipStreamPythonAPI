@@ -42,7 +42,7 @@ Python client for the SlipStream CIMI API.
 
 ```sh
 git clone https://github.com/slipstream/SlipStreamPythonAPI.git
-cd SlipStreamPythonAPI/
+cd SlipStreamPythonAPI/api/
 pip install --editable .
 ```
 
