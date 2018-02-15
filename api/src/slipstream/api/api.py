@@ -154,6 +154,8 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_ENDPOINT = 'https://nuv.la'
 DEFAULT_COOKIE_FILE = os.path.expanduser('~/.slipstream/cookies.txt')
+HREF_SESSION_TMPL_INTERNAL = 'session-template/internal'
+HREF_SESSION_TMPL_APIKEY = 'session-template/api-key'
 
 
 def _mod_url(path):
@@ -192,11 +194,11 @@ class SlipStreamError(Exception):
 class SessionStore(requests.Session):
     """A ``requests.Session`` subclass implementing a file-based session store."""
 
-    def __init__(self, endpoint, reauthenticate, cookie_file=None):
+    def __init__(self, endpoint, reauthenticate, cookie_file=None, login_params=None):
         super(SessionStore, self).__init__()
         self.session_base_url = '{}/api/session'.format(endpoint)
         self.reauthenticate = reauthenticate
-        self.login_params = None
+        self.login_params = login_params
         if cookie_file is None:
             cookie_file = DEFAULT_COOKIE_FILE
         cookie_dir = os.path.dirname(cookie_file)
@@ -256,6 +258,22 @@ class SessionStore(requests.Session):
             pass
 
 
+def to_login_params(creds):
+    """
+    :param creds: {'username': '', 'password': ''} or {'key': '', 'secret': ''}
+    :return: dict extended with the right 'href' or an empty dict
+    """
+    if not creds:
+        return {}
+    if ('username' in creds) and ('password' in creds):
+        creds.update({'href': HREF_SESSION_TMPL_INTERNAL})
+    elif ('key' in creds) and ('secret' in creds):
+        creds.update({'href': HREF_SESSION_TMPL_APIKEY})
+    else:
+        return {}
+    return creds
+
+
 class Api(object):
     """ This class is a Python wrapper&helper of the native SlipStream REST API"""
 
@@ -263,9 +281,18 @@ class Api(object):
     KEEP_RUNNING_VALUES = ['always', 'never', 'on-success', 'on-error']
     CIMI_PARAMETERS_NAME = ['first', 'last', 'filter', 'select', 'expand', 'orderby', 'aggregation']
 
-    def __init__(self, endpoint=DEFAULT_ENDPOINT, cookie_file=None, insecure=False, reauthenticate=False):
+    def __init__(self, endpoint=DEFAULT_ENDPOINT, cookie_file=None, insecure=False, reauthenticate=False,
+                 login_creds=None):
+        """
+        :param endpoint: SlipStream endpoint (https://nuv.la).
+        :param cookie_file: cookie jar file
+        :param insecure: don't check server certificate.
+        :param reauthenticate: internal session reauthn in case of requets failures.
+        :param login_creds: {'username': '', 'password': ''} or {'key': '', 'secret': ''}
+        """
         self.endpoint = endpoint
-        self.session = SessionStore(endpoint, reauthenticate, cookie_file=cookie_file)
+        self.session = SessionStore(endpoint, reauthenticate, cookie_file=cookie_file,
+                                    login_params=to_login_params(login_creds))
         self.session.verify = (insecure == False)
         self.session.headers.update({'Accept': 'application/xml'})
         if insecure:
@@ -312,9 +339,8 @@ class Api(object):
         :return: see login()
         """
         self._username = username
-        return self.login({'href': 'session-template/internal',
-                           'username': username,
-                           'password': password})
+        return self.login(to_login_params({'username': username,
+                                           'password': password}))
 
     def login_apikey(self, key, secret):
         """Login to the server using API key/secret pair.
@@ -324,9 +350,8 @@ class Api(object):
         :param secret: The Secret Key corresponding to the Key ID
         :return: see login()
         """
-        return self.login({'href': 'session-template/api-key',
-                           'key': key,
-                           'secret': secret})
+        return self.login(to_login_params({'key': key,
+                                           'secret': secret}))
 
     def logout(self):
         """Logs user out by deleting session.
