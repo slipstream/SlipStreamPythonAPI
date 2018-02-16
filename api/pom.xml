@@ -5,7 +5,7 @@
 
   <artifactId>SlipStreamPythonAPI-tarball</artifactId>
   <packaging>pom</packaging>
-  <name>SlipStreamJobEngine/job</name>
+  <name>SlipStreamPythonAPI/tarball</name>
   <url>http://sixsq.com</url>
 
   <parent>
