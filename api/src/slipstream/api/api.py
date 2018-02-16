@@ -214,9 +214,11 @@ class SessionStore(requests.Session):
     def need_to_login(self, accessed_url, status_code):
         return self.reauthenticate and status_code in [401, 403] and accessed_url != self.session_base_url
 
+    def _request(self, *args, **kwargs):
+        return super(SessionStore, self).request(*args, **kwargs)
+
     def request(self, *args, **kwargs):
-        super_request = super(SessionStore, self).request
-        response = super_request(*args, **kwargs)
+        response = self._request(*args, **kwargs)
 
         if not self.verify and response.cookies:
             self._unsecure_cookie(args[1], response)
@@ -228,7 +230,7 @@ class SessionStore(requests.Session):
             login_response = self.cimi_login(self.login_params)
             if login_response is not None and login_response.status_code == 201:
                 # retry the call after reauthentication
-                response = super_request(*args, **kwargs)
+                response = self._request(*args, **kwargs)
 
         return response
 
