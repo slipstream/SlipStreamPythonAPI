@@ -287,7 +287,7 @@ class Api(object):
         :param endpoint: SlipStream endpoint (https://nuv.la).
         :param cookie_file: cookie jar file
         :param insecure: don't check server certificate.
-        :param reauthenticate: internal session reauthn in case of requets failures.
+        :param reauthenticate: reauthenticate in case of requets failures with status code 401 or 403.
         :param login_creds: {'username': '', 'password': ''} or {'key': '', 'secret': ''}
         """
         self.endpoint = endpoint
