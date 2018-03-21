@@ -438,7 +438,7 @@ class Api(object):
 
     @staticmethod
     def _dict_values_to_string(d):
-        return {k: v if isinstance(v, six.string_types) else str(v) for k, v in six.iteritems(d)}
+        return dict([(k, v) if isinstance(v, six.string_types) else str(v) for k, v in six.iteritems(d)])
 
     @staticmethod
     def _flatten_cloud_parameters(cloud_parameters):
