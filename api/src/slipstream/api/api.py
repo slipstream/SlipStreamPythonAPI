@@ -196,7 +196,7 @@ class SessionStore(requests.Session):
 
     def __init__(self, endpoint, reauthenticate, cookie_file=None, login_params=None):
         super(SessionStore, self).__init__()
-        self.session_base_url = '{}/api/session'.format(endpoint)
+        self.session_base_url = '{0}/api/session'.format(endpoint)
         self.reauthenticate = reauthenticate
         self.login_params = login_params
         if cookie_file is None:
@@ -446,7 +446,7 @@ class Api(object):
         if cloud_parameters is not None:
             for cloud, params in six.iteritems(cloud_parameters):
                 for name, value in six.iteritems(params):
-                    parameters['{}.{}'.format(cloud, name)] = value
+                    parameters['{0}.{1}'.format(cloud, name)] = value
         return parameters
 
     @staticmethod
@@ -495,7 +495,7 @@ class Api(object):
         operation_href = cimi_resource.operations_by_name.get(operation, {}).get('href')
 
         if not operation_href:
-            raise KeyError("Operation '{}' not found.".format(operation))
+            raise KeyError("Operation '{0}' not found.".format(operation))
 
         return operation_href
 
@@ -509,12 +509,12 @@ class Api(object):
         if resource_type is not None:
             resource_id = self.cimi_cloud_entry_point.entry_points.get(resource_type)
             if resource_id is None:
-                raise KeyError("Resource type '{}' not found.".format(resource_type))
+                raise KeyError("Resource type '{0}' not found.".format(resource_type))
 
         return resource_id
 
     def _cimi_request(self, method, uri, params=None, json=None, data=None):
-        response = self.session.request(method, '{}/{}/{}'.format(self.endpoint, 'api', uri),
+        response = self.session.request(method, '{0}/{1}/{2}'.format(self.endpoint, 'api', uri),
                                         headers={'Accept': 'application/json'},
                                         params=params,
                                         json=json,
@@ -714,7 +714,7 @@ class Api(object):
         attrib = dict(name=username, password=password, email=email,
                       firstName=first_name, lastName=last_name,
                       issuper=privileged,
-                      state='ACTIVE', resourceUri='user/{}'.format(username))
+                      state='ACTIVE', resourceUri='user/{0}'.format(username))
         self._add_to_dict_if_not_none(attrib, 'organization', organization)
         self._add_to_dict_if_not_none(attrib, 'roles', roles)
         _attrib = self._dict_values_to_string(attrib)
@@ -736,7 +736,7 @@ class Api(object):
         for name, value in six.iteritems(_parameters):
             params_xml.append(self._create_xml_parameter_entry(name, value))
 
-        response = self._xml_put('/user/{}'.format(username), etree.tostring(user_xml, 'UTF-8'))
+        response = self._xml_put('/user/{0}'.format(username), etree.tostring(user_xml, 'UTF-8'))
 
         self._check_xml_result(response)
 
@@ -803,7 +803,7 @@ class Api(object):
             if param:
                 parameters_xml.remove(entry)
 
-        response = self._xml_put('/user/{}'.format(root.get('name')), etree.tostring(root, 'UTF-8'))
+        response = self._xml_put('/user/{0}'.format(root.get('name')), etree.tostring(root, 'UTF-8'))
 
         self._check_xml_result(response)
 
@@ -1196,7 +1196,7 @@ class Api(object):
         :type ignore_abort: bool
         """
         ignoreabort = str(ignore_abort).lower()
-        return self._text_get('/run/{}/{}'.format(str(deployment_id), parameter_name),
+        return self._text_get('/run/{0}/{1}'.format(str(deployment_id), parameter_name),
                               ignoreabort=ignoreabort)
 
     def get_deployment_events(self, deployment_id, types=None):
@@ -1321,7 +1321,7 @@ class Api(object):
 
         if keep_running:
             if keep_running not in self.KEEP_RUNNING_VALUES:
-                raise ValueError('"keep_running" should be one of {}, not "{}"'.format(self.KEEP_RUNNING_VALUES,
+                raise ValueError('"keep_running" should be one of {0}, not "{1}"'.format(self.KEEP_RUNNING_VALUES,
                                                                                        keep_running))
             _raw_params['keep-running'] = keep_running
 
@@ -1466,7 +1466,7 @@ class Api(object):
     @staticmethod
     def _check_type(obj_name, obj, allowed_types):
         if not isinstance(obj, allowed_types):
-            raise ValueError('Invalid type "{}" for "{}"'.format(type(obj), obj_name))
+            raise ValueError('Invalid type "{0}" for "{1}"'.format(type(obj), obj_name))
 
     @classmethod
     def _convert_clouds_to_raw_params(cls, clouds):
@@ -1492,11 +1492,11 @@ class Api(object):
 
         if isinstance(parameters, dict):
             for key, value in parameters.items():
-                cls._check_type('{}:{}'.format(key, parameter_name), value, allowed_types)
-                raw_params['parameter--node--{}--{}'.format(key, parameter_name)] = value
+                cls._check_type('{0}:{1}'.format(key, parameter_name), value, allowed_types)
+                raw_params['parameter--node--{0}--{1}'.format(key, parameter_name)] = value
         elif allow_no_node:
             cls._check_type(parameter_name, parameters, allowed_types)
-            raw_params['parameter--{}'.format(parameter_name)] = parameters
+            raw_params['parameter--{0}'.format(parameter_name)] = parameters
         else:
             cls._check_type(parameter_name, parameters, dict)
 
@@ -1513,14 +1513,14 @@ class Api(object):
             if isinstance(value, dict):
                 # Redefine node parameters
                 for parameter_name, parameter_value in value.items():
-                    raw_params['parameter--node--{}--{}'.format(key, parameter_name)] = parameter_value
+                    raw_params['parameter--node--{0}--{1}'.format(key, parameter_name)] = parameter_value
             else:
                 if key in cls.GLOBAL_PARAMETERS:
                     # Redefine a global parameter
                     raw_params[key] = value
                 else:
                     # Redefine a component parameter
-                    raw_params['parameter--{}'.format(key)] = value
+                    raw_params['parameter--{0}'.format(key)] = value
 
         return raw_params
 

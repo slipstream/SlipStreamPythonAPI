@@ -36,16 +36,16 @@ class CimiResponse(object):
         for key, value in list(self.json.items()):
             name = camel_to_snake(key)
             if hasattr(self, name):
-                warnings.warn('Cannot set attribute "{}" because it already exist'.format(name), RuntimeWarning)
+                warnings.warn('Cannot set attribute "{0}" because it already exist'.format(name), RuntimeWarning)
             else:
                 setattr(self, name, value)
                 self._attributes_names.append(name)
 
     def __str__(self):
-        data = ['{}: {}'.format(attr, truncate_middle(80, str(getattr(self, attr))))
+        data = ['{0}: {1}'.format(attr, truncate_middle(80, str(getattr(self, attr))))
                 for attr in self._attributes_names
                 if getattr(self, attr, None) is not None]
-        return '{}:\n{}'.format(self.__class__.__name__, '\n'.join(sorted(data)))
+        return '{0}:\n{1}'.format(self.__class__.__name__, '\n'.join(sorted(data)))
 
 
 class CimiResource(CimiResponse):
@@ -97,7 +97,7 @@ class CloudEntryPoint(CimiResource):
         self.entry_points = self.extract_entry_points()
 
     def extract_entry_points(self):
-        return dict([(k, v['href']) for k,v in list(self.json.items()) if isinstance(v, dict) and 'href' in v])
+        return dict([(k, v['href']) for k, v in list(self.json.items()) if isinstance(v, dict) and 'href' in v])
 
 
 App = collections.namedtuple('App', [
