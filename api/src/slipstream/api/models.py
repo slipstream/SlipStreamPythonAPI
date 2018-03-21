@@ -56,7 +56,7 @@ class CimiResource(CimiResponse):
 
     def get_operations_by_name(self):
         operations = self.json.get('operations', [])
-        return {op['rel']: op for op in operations if 'rel' in op}
+        return dict([(op['rel'], op) for op in operations if 'rel' in op])
 
 
 class CimiCollection(CimiResource):
@@ -97,7 +97,7 @@ class CloudEntryPoint(CimiResource):
         self.entry_points = self.extract_entry_points()
 
     def extract_entry_points(self):
-        return {k: v['href'] for k,v in list(self.json.items()) if isinstance(v, dict) and 'href' in v}
+        return dict([(k, v['href']) for k,v in list(self.json.items()) if isinstance(v, dict) and 'href' in v])
 
 
 App = collections.namedtuple('App', [
