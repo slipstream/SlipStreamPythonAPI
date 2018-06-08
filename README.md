@@ -64,8 +64,6 @@ From repo root directory, launch following commands:
 ```sh
 git checkout <release-version>
 mvn clean install -P release
-cd pypi/target/pypi-pkg/
-python setup.py sdist bdist_wheel upload -r pypi
 ```
 
 ## Documentation
