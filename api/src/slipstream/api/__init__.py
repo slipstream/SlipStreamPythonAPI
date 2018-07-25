@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 
-from .api import Api, SlipStreamError
+from .api import Api, SlipStreamError, ConnectionError
 

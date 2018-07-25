@@ -137,7 +137,7 @@ import logging
 
 import requests
 from requests.cookies import MockRequest
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError
 
 from six import string_types, integer_types
 from six.moves.urllib.parse import urlparse
