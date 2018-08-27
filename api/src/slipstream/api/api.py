@@ -565,7 +565,7 @@ class Api(object):
         :rtype:     CimiResource
         """
         cimi_params, query_params = self._split_cimi_params(kwargs)
-        resp_json = self._cimi_get(resource_id=resource_id)
+        resp_json = self._cimi_get(resource_id=resource_id, params=cimi_params)
         return models.CimiResource(resp_json)
 
     def cimi_edit(self, resource_id, data, **kwargs):
