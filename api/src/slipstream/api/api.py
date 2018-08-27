@@ -552,18 +552,23 @@ class Api(object):
     def _cimi_delete(self, resource_id=None):
         return self._cimi_request('DELETE', resource_id)
 
-    def cimi_get(self, resource_id):
+    def cimi_get(self, resource_id, **kwargs):
         """ Retreive a CIMI resource by it's resource id
 
         :param      resource_id: The id of the resource to retrieve
         :type       resource_id: str
+        
+        :keyword    select: Select attributes to return. (resourceURI always returned)
+        :type       select: str or list of str
 
         :return:    A CimiResource object corresponding to the resource
+        :rtype:     CimiResource
         """
-        resp_json = self._cimi_get(resource_id=resource_id)
+        cimi_params, query_params = self._split_cimi_params(kwargs)
+        resp_json = self._cimi_get(resource_id=resource_id, params=cimi_params)
         return models.CimiResource(resp_json)
 
-    def cimi_edit(self, resource_id, data):
+    def cimi_edit(self, resource_id, data, **kwargs):
         """ Edit a CIMI resource by it's resource id
 
         :param      resource_id: The id of the resource to edit
@@ -572,12 +577,17 @@ class Api(object):
         :param      data: The data to serialize into JSON
         :type       data: dict
 
+        :keyword    select: Cimi select parameter, used to delete an existing attribute from a cimi resource when the
+                    selected fields are not present in the data argument (e.g description, value)
+        :type       select: str or list of str
+
         :return:    A CimiResponse object which should contain the attributes 'status', 'resource-id' and 'message'
         :rtype:     CimiResponse
         """
         resource = self.cimi_get(resource_id=resource_id)
         operation_href = self._cimi_find_operation_href(resource, 'edit')
-        return models.CimiResponse(self._cimi_put(resource_id=operation_href, json=data))
+        cimi_params, query_params = self._split_cimi_params(kwargs)
+        return models.CimiResponse(self._cimi_put(resource_id=operation_href, json=data, params=cimi_params))
 
     def cimi_delete(self, resource_id):
         """ Delete a CIMI resource by it's resource id
@@ -1322,7 +1332,7 @@ class Api(object):
         if keep_running:
             if keep_running not in self.KEEP_RUNNING_VALUES:
                 raise ValueError('"keep_running" should be one of {0}, not "{1}"'.format(self.KEEP_RUNNING_VALUES,
-                                                                                       keep_running))
+                                                                                         keep_running))
             _raw_params['keep-running'] = keep_running
 
         if scalable:
