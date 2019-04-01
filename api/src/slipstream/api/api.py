@@ -152,6 +152,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_TIMEOUT = 120
 DEFAULT_ENDPOINT = 'https://nuv.la'
 DEFAULT_COOKIE_FILE = os.path.expanduser('~/.slipstream/cookies.txt')
 HREF_SESSION_TMPL_INTERNAL = 'session-template/internal'
@@ -215,6 +216,7 @@ class SessionStore(requests.Session):
         return self.reauthenticate and status_code in [401, 403] and accessed_url != self.session_base_url
 
     def _request(self, *args, **kwargs):
+        kwargs.setdefault('timeout', DEFAULT_TIMEOUT)
         return super(SessionStore, self).request(*args, **kwargs)
 
     def request(self, *args, **kwargs):
